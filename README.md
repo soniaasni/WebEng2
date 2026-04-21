@@ -22,4 +22,37 @@ kontrolliert und dem Team beim Sprint-Inkrement beratend und unterstützend zur 
 Kommunikation untereinander aufrecht erhält, das Ziel ständig kontrolliert und den Product-Owner informiert.
 ▪Die fertige Lösung soll auf einem GitHub-Repository lauffähig veröffentlicht und auf CD/DVD dem Sekretariat 
 übergeben werden. Der Scrum-Master ist für die vollständige Auslieferung der PWA zum Ende des Vorlesungs
-quartals oder nach individueller zeitlicher Absprache mit dem Dozenten verantwortlich. 
+quartals oder nach individueller zeitlicher Absprache mit dem Dozenten verantwortlich.
+
+## React MVP starten und testen
+
+1. Projektverzeichnis öffnen:
+
+```bash
+cd "pwd\WebEng2"
+```
+
+2. Abhängigkeiten installieren (falls noch nicht geschehen):
+
+```bash
+npm install
+```
+
+3. Dev-Server starten:
+
+```bash
+npm start
+```
+
+4. Browser öffnen:
+
+- Öffne `http://localhost:5173`
+- Die React-App sollte mit einem Formular und einer Liste erscheinen.
+
+5. Funktion testen:
+
+- Füge ein neues Element ein und bestätige mit `Hinzufügen`.
+- Entferne ein Element mit dem `Entfernen`-Button.
+
+> Falls `npm start` nicht funktioniert, verwende alternativ `npm run dev`.
+
