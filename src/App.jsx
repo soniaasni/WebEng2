@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { MapContainer, TileLayer } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import Map from "./components/Map";
 
 function App() {
   const [items, setItems] = useState(['Erstes Element', 'Zweites Element']);
@@ -44,8 +47,20 @@ function App() {
           ))}
         </ul>
       </section>
+      <section className="map-section">
+        <h2>Karte</h2>
+        <Map />
+        <a
+          href="https://www.openstreetmap.org/fixthemap"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Kartenfehler melden
+        </a>
+      </section>
     </div>
   );
 }
 
 export default App;
+
