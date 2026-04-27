@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import Map from "./components/Map";
 
 function App() {
   const [items, setItems] = useState(['Erstes Element', 'Zweites Element']);
@@ -48,18 +49,7 @@ function App() {
       </section>
       <section className="map-section">
         <h2>Karte</h2>
-
-        <MapContainer
-          center={[51.1657, 10.4515]}
-          zoom={6}
-          style={{ height: "400px", width: "100%" }}
-        >
-          <TileLayer
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-          />
-        </MapContainer>
-
+        <Map />
         <a
           href="https://www.openstreetmap.org/fixthemap"
           target="_blank"
