@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -62,9 +62,22 @@ function LocateButton({ setPosition }) {
   );
 }
 
+function MapClickHandler({ setTargetPosition }) {
+  useMapEvents({
+    click(e) {
+      const coords = [e.latlng.lat, e.latlng.lng];
+      setTargetPosition(coords);
+
+      console.log("Zielkoordinate gewählt:", coords);
+    },
+  });
+
+  return null;
+}
+
 export default function Map() {
   const [position, setPosition] = useState(null);
-
+  const [targetPosition, setTargetPosition] = useState(null);
   useEffect(() => {
     if (!navigator.geolocation) {
       console.log("Geolocation wird nicht unterstützt.");
@@ -101,11 +114,12 @@ export default function Map() {
 
         <LocateButton setPosition={setPosition} />
 
-        {position && (
-          <Marker position={position}>
-            <Popup>Dein aktueller Standort</Popup>
-          </Marker>
-        )}
+        {targetPosition && (
+        <Marker position={targetPosition}>
+          <Popup>Ausgewähltes Ziel</Popup>
+        </Marker>
+      )}
+        <MapClickHandler setTargetPosition={setTargetPosition} />
       </MapContainer>
     </div>
   );
