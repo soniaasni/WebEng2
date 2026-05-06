@@ -62,20 +62,56 @@ function LocateButton({ setPosition }) {
   );
 }
 
-function MapClickHandler({ setTargetPosition }) {
+function MapClickHandler({ setTargetPosition, setPlaceName }) {
   useMapEvents({
-    click(e) {
+    async click(e) {
       const coords = [e.latlng.lat, e.latlng.lng];
+
       setTargetPosition(coords);
+      setPlaceName("Ort wird geladen...");
 
       console.log("Zielkoordinate gewählt:", coords);
+
+      try {
+        const name = await fetchPlaceName(e.latlng.lat, e.latlng.lng);
+        setPlaceName(name);
+        console.log("Gefundener Ort:", name);
+      } catch (error) {
+        console.error("Reverse Geocoding fehlgeschlagen:", error);
+        setPlaceName("Ort konnte nicht geladen werden");
+      }
     },
   });
 
   return null;
 }
 
+async function fetchPlaceName(lat, lon) {
+  const url =
+    `https://nominatim.openstreetmap.org/reverse?` +
+    `lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
+
+  const response = await fetch(url, {
+    headers: {
+      "Accept-Language": "de",
+    },
+  });
+
+  const data = await response.json();
+
+  return (
+    data.address?.city ||
+    data.address?.town ||
+    data.address?.village ||
+    data.address?.municipality ||
+    data.address?.county ||
+    data.display_name ||
+    "Unbekannter Ort"
+  );
+}
+
 export default function Map() {
+  const [placeName, setPlaceName] = useState("");
   const [position, setPosition] = useState(null);
   const [targetPosition, setTargetPosition] = useState(null);
   useEffect(() => {
@@ -116,10 +152,11 @@ export default function Map() {
 
         {targetPosition && (
         <Marker position={targetPosition}>
-          <Popup>Ausgewähltes Ziel</Popup>
+          <Popup>{placeName || "Ausgewähltes Ziel"}</Popup>
         </Marker>
       )}
-        <MapClickHandler setTargetPosition={setTargetPosition} />
+        <MapClickHandler setTargetPosition={setTargetPosition} 
+        setPlaceName={setPlaceName}/>
       </MapContainer>
     </div>
   );
