@@ -1,8 +1,9 @@
-const CACHE_NAME = 'webeng2-v1';
+const CACHE_NAME = 'webeng2-v2';
 
 const APP_SHELL = [
   '/',
   '/index.html',
+  '/offline.html',
   '/manifest.json',
   '/img/Icon.png',
   '/img/Icon.jpeg',
@@ -50,10 +51,19 @@ async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) return cached;
 
-  const response = await fetch(request);
-  if (response.ok) {
-    const cache = await caches.open(CACHE_NAME);
-    cache.put(request, response.clone());
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    // Netzwerk nicht erreichbar — bei Navigation offline.html ausliefern
+    if (request.mode === 'navigate') {
+      const fallback = await caches.match('/offline.html');
+      if (fallback) return fallback;
+    }
+    return Response.error();
   }
-  return response;
 }
