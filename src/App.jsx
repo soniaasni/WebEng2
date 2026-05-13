@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import Map from "./components/Map";
+import OfflineBanner from "./components/OfflineBanner";
 
 function App() {
   const [items, setItems] = useState(['Erstes Element', 'Zweites Element']);
@@ -21,6 +22,7 @@ function App() {
 
   return (
     <div className="app">
+      <OfflineBanner />
       <header className="app-header">
         <h1>React MVP</h1>
         <p>Ein einfacher Start für dein WebEng2-MVP.</p>
