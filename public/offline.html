@@ -55,9 +55,25 @@
       button:hover {
         background: #1d4ed8;
       }
+
+      .offline-banner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: #fef08a;
+        color: #713f12;
+        text-align: center;
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        border-bottom: 1px solid #fde047;
+        z-index: 100;
+      }
     </style>
   </head>
   <body>
+    <div class="offline-banner">📡 Du bist offline – keine Internetverbindung</div>
     <div class="container">
       <div class="icon">📡</div>
       <h1>Keine Internetverbindung</h1>

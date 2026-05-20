@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
 
+async function checkOnline() {
+  if (!navigator.onLine) return false;
+  try {
+    // Timestamp-URL → nie im SW-Cache → echter Netzwerktest
+    await fetch(`/?_check=${Date.now()}`, { method: 'HEAD', cache: 'no-store' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default function OfflineBanner() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -9,6 +20,9 @@ export default function OfflineBanner() {
 
     window.addEventListener('offline', goOffline);
     window.addEventListener('online',  goOnline);
+
+    // Nachladen-Fix: nach Mount nochmal prüfen (DevTools offline)
+    checkOnline().then(online => setIsOffline(!online));
 
     return () => {
       window.removeEventListener('offline', goOffline);
