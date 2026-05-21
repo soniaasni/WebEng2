@@ -165,8 +165,6 @@ export default function Map() {
   const [targetPosition, setTargetPosition] = useState(null);
   const [wikiInfo, setWikiInfo] = useState(null);
   const requestId = useRef(0);
-  const markerRef = useRef(null);
-
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -195,6 +193,7 @@ export default function Map() {
       <MapContainer
         center={position || [51.1657, 10.4515]}
         zoom={13}
+        closePopupOnClick={false}
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
@@ -207,8 +206,10 @@ export default function Map() {
         {targetPosition && (
           <Marker
             position={targetPosition}
-            ref={markerRef}
-            eventHandlers={{ add: (e) => e.target.openPopup() }}
+            eventHandlers={{
+              add: (e) => e.target.openPopup(),
+              move: (e) => e.target.openPopup(),
+            }}
           >
             <Popup minWidth={220}>
               <strong>{placeName || "Ausgewähltes Ziel"}</strong>
