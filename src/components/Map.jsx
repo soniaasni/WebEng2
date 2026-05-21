@@ -228,7 +228,7 @@ export default function Map() {
 
               {wikiInfo === "offline" && (
                 <p style={{ margin: "6px 0 0", color: "#f97316", fontSize: "0.85em" }}>
-                  Kein Internet – Wikipedia ist offline nicht verfügbar.
+                  Wikipedia ist offline nicht verfügbar.
                 </p>
               )}
 
