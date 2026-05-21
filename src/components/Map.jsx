@@ -72,6 +72,12 @@ function MapClickHandler({ setTargetPosition, setPlaceName, setWikiInfo, request
       setPlaceName("Ort wird geladen...");
       setWikiInfo("loading");
 
+      if (!navigator.onLine) {
+        setPlaceName("Kein Internet");
+        setWikiInfo("offline");
+        return;
+      }
+
       try {
         const name = await fetchPlaceName(e.latlng.lat, e.latlng.lng);
         if (requestId.current !== currentId) return; // veraltete Antwort ignorieren
@@ -217,6 +223,12 @@ export default function Map() {
               {wikiInfo === "loading" && (
                 <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: "0.85em" }}>
                   Wikipedia wird geladen…
+                </p>
+              )}
+
+              {wikiInfo === "offline" && (
+                <p style={{ margin: "6px 0 0", color: "#f97316", fontSize: "0.85em" }}>
+                  Kein Internet – Wikipedia ist offline nicht verfügbar.
                 </p>
               )}
 
