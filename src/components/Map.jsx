@@ -72,6 +72,7 @@ function MapClickHandler({
   setTargetPosition,
   setPlaceName,
   setWikiInfo,
+  onSearchError,
   requestId,
 }) {
   useMapEvents({
@@ -82,6 +83,7 @@ function MapClickHandler({
       setTargetPosition(coords);
       setPlaceName("Ort wird geladen...");
       setWikiInfo("loading");
+      onSearchError?.("");
 
       if (!navigator.onLine) {
         setPlaceName("Kein Internet");
@@ -91,17 +93,20 @@ function MapClickHandler({
 
       try {
         const name = await fetchPlaceName(e.latlng.lat, e.latlng.lng);
+
         if (requestId.current !== currentId) return;
 
         setPlaceName(name);
 
         const wiki = await fetchWikipediaInfo(name);
+
         if (requestId.current !== currentId) return;
 
         setWikiInfo(wiki ?? "not_found");
-      } catch {
+      } catch (error) {
         if (requestId.current !== currentId) return;
 
+        console.error("Reverse Geocoding fehlgeschlagen:", error);
         setPlaceName("Ort konnte nicht geladen werden");
         setWikiInfo("error");
       }
@@ -362,6 +367,7 @@ export default function Map({ searchPlace, onSearchError }) {
           setTargetPosition={setTargetPosition}
           setPlaceName={setPlaceName}
           setWikiInfo={setWikiInfo}
+          onSearchError={onSearchError}
           requestId={requestId}
         />
       </MapContainer>
