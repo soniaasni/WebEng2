@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
+import { Button } from "framework7-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -43,23 +44,20 @@ function LocateButton({ setPosition }) {
   };
 
   return (
-    <button
-      onClick={locateUser}
-      style={{
-        position: "absolute",
-        top: "10px",
-        right: "10px",
-        zIndex: 1000,
-        padding: "8px 12px",
-        background: "white",
-        border: "1px solid #ccc",
-        borderRadius: "6px",
-        cursor: "pointer",
-      }}
-    >
-      📍 Standort anzeigen
-    </button>
-  );
+  <Button
+    fill
+    small
+    onClick={locateUser}
+    style={{
+      position: "absolute",
+      top: "10px",
+      right: "10px",
+      zIndex: 1000,
+    }}
+  >
+    📍 Standort anzeigen
+  </Button>
+);
 }
 
 function MapClickHandler({ setTargetPosition, setPlaceName, setWikiInfo, requestId }) {
