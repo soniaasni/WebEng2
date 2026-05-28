@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import { Button } from "framework7-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -15,7 +22,6 @@ L.Icon.Default.mergeOptions({
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// Button-Komponente innerhalb der Karte
 function LocateButton({ setPosition }) {
   const map = useMap();
 
@@ -27,10 +33,7 @@ function LocateButton({ setPosition }) {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const newPosition = [
-          pos.coords.latitude,
-          pos.coords.longitude,
-        ];
+        const newPosition = [pos.coords.latitude, pos.coords.longitude];
 
         setPosition(newPosition);
         map.setView(newPosition, 16);
@@ -39,28 +42,38 @@ function LocateButton({ setPosition }) {
       },
       (err) => {
         console.error("Standort konnte nicht geladen werden:", err);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60000,
       }
     );
   };
 
   return (
-  <Button
-    fill
-    small
-    onClick={locateUser}
-    style={{
-      position: "absolute",
-      top: "10px",
-      right: "10px",
-      zIndex: 1000,
-    }}
-  >
-    📍 Standort anzeigen
-  </Button>
-);
+    <Button
+      fill
+      small
+      onClick={locateUser}
+      style={{
+        position: "absolute",
+        top: "10px",
+        right: "10px",
+        zIndex: 1000,
+      }}
+    >
+      📍 Standort anzeigen
+    </Button>
+  );
 }
 
-function MapClickHandler({ setTargetPosition, setPlaceName, setWikiInfo, requestId }) {
+function MapClickHandler({
+  setTargetPosition,
+  setPlaceName,
+  setWikiInfo,
+  requestId,
+}) {
   useMapEvents({
     async click(e) {
       const coords = [e.latlng.lat, e.latlng.lng];
@@ -78,19 +91,17 @@ function MapClickHandler({ setTargetPosition, setPlaceName, setWikiInfo, request
 
       try {
         const name = await fetchPlaceName(e.latlng.lat, e.latlng.lng);
-        if (requestId.current !== currentId) return; // veraltete Antwort ignorieren
+        if (requestId.current !== currentId) return;
+
         setPlaceName(name);
 
-        try {
-          const wiki = await fetchWikipediaInfo(name);
-          if (requestId.current !== currentId) return;
-          setWikiInfo(wiki ?? "not_found");
-        } catch {
-          if (requestId.current !== currentId) return;
-          setWikiInfo("error");
-        }
+        const wiki = await fetchWikipediaInfo(name);
+        if (requestId.current !== currentId) return;
+
+        setWikiInfo(wiki ?? "not_found");
       } catch {
         if (requestId.current !== currentId) return;
+
         setPlaceName("Ort konnte nicht geladen werden");
         setWikiInfo("error");
       }
@@ -100,8 +111,70 @@ function MapClickHandler({ setTargetPosition, setPlaceName, setWikiInfo, request
   return null;
 }
 
+function SearchPlaceHandler({
+  searchPlace,
+  setTargetPosition,
+  setPlaceName,
+  setWikiInfo,
+  onSearchError,
+  requestId,
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!searchPlace) return;
+
+    async function search() {
+      const currentId = ++requestId.current;
+
+      if (!navigator.onLine) {
+        onSearchError?.("Suche ist offline nicht verfügbar.");
+        setWikiInfo("offline");
+        return;
+      }
+
+      try {
+        const result = await fetchCoordinatesForPlace(searchPlace);
+
+        if (requestId.current !== currentId) return;
+
+        if (!result) {
+          onSearchError?.("Kein passender Ort gefunden.");
+          return;
+        }
+
+        const coords = [result.lat, result.lon];
+
+        setTargetPosition(coords);
+        setPlaceName(result.displayName);
+        setWikiInfo("loading");
+        onSearchError?.("");
+
+        map.setView(coords, 14);
+
+        const wiki = await fetchWikipediaInfo(result.displayName);
+
+        if (requestId.current !== currentId) return;
+
+        setWikiInfo(wiki ?? "not_found");
+
+        console.log("Ort über Suche gefunden:", result);
+      } catch (error) {
+        if (requestId.current !== currentId) return;
+
+        console.error("Ortssuche fehlgeschlagen:", error);
+        onSearchError?.("Ortssuche konnte nicht ausgeführt werden.");
+        setWikiInfo("error");
+      }
+    }
+
+    search();
+  }, [searchPlace]);
+
+  return null;
+}
+
 async function fetchWikipediaInfo(placeName) {
-  // Nur ersten Teil vor Komma verwenden (z.B. "Friedrichshafen, Bodenseekreis" → "Friedrichshafen")
   const searchTerm = placeName.split(",")[0].trim();
 
   const url =
@@ -117,18 +190,18 @@ async function fetchWikipediaInfo(placeName) {
 
   const page = Object.values(pages)[0];
 
-  // Kein Artikel gefunden
   if (page.missing !== undefined || page.pageid === undefined) return null;
 
   const extract = page.extract?.trim();
   if (!extract) return null;
 
-  // Disambiguation-Seite erkennen
-  if (extract.startsWith(searchTerm + " steht für") || extract.includes("Begriffsklärung")) {
+  if (
+    extract.startsWith(searchTerm + " steht für") ||
+    extract.includes("Begriffsklärung")
+  ) {
     return null;
   }
 
-  // Auf 250 Zeichen kürzen
   const shortExtract =
     extract.length > 250 ? extract.slice(0, 250).trimEnd() + " …" : extract;
 
@@ -163,7 +236,32 @@ async function fetchPlaceName(lat, lon) {
   );
 }
 
-export default function Map() {
+async function fetchCoordinatesForPlace(placeName) {
+  const url =
+    `https://nominatim.openstreetmap.org/search?` +
+    `q=${encodeURIComponent(placeName)}` +
+    `&format=json&limit=1&addressdetails=1`;
+
+  const response = await fetch(url, {
+    headers: {
+      "Accept-Language": "de",
+    },
+  });
+
+  const data = await response.json();
+
+  if (!data || data.length === 0) {
+    return null;
+  }
+
+  return {
+    lat: Number(data[0].lat),
+    lon: Number(data[0].lon),
+    displayName: data[0].display_name,
+  };
+}
+
+export default function Map({ searchPlace, onSearchError }) {
   const [placeName, setPlaceName] = useState("");
   const [position, setPosition] = useState(null);
   const [targetPosition, setTargetPosition] = useState(null);
@@ -178,10 +276,7 @@ export default function Map() {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const initialPosition = [
-          pos.coords.latitude,
-          pos.coords.longitude,
-        ];
+        const initialPosition = [pos.coords.latitude, pos.coords.longitude];
 
         setPosition(initialPosition);
         console.log("Initialer Standort:", initialPosition);
@@ -193,7 +288,7 @@ export default function Map() {
   }, []);
 
   return (
-    <div style={{ height: "400px", width: "100%", position: "relative" }}>
+    <div className="map-wrapper">
       <MapContainer
         center={position || [51.1657, 10.4515]}
         zoom={13}
@@ -206,6 +301,15 @@ export default function Map() {
         />
 
         <LocateButton setPosition={setPosition} />
+
+        <SearchPlaceHandler
+          searchPlace={searchPlace}
+          setTargetPosition={setTargetPosition}
+          setPlaceName={setPlaceName}
+          setWikiInfo={setWikiInfo}
+          onSearchError={onSearchError}
+          requestId={requestId}
+        />
 
         {targetPosition && (
           <Marker
@@ -253,6 +357,7 @@ export default function Map() {
             </Popup>
           </Marker>
         )}
+
         <MapClickHandler
           setTargetPosition={setTargetPosition}
           setPlaceName={setPlaceName}
