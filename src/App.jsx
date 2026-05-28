@@ -5,60 +5,65 @@ import {
   Page,
   Navbar,
   Block,
-  BlockTitle,
-  List,
-  ListItem,
+  Searchbar,
   Button,
-  Card,
-  CardContent,
 } from "framework7-react";
 
 import Map from "./components/Map";
 import OfflineBanner from "./components/OfflineBanner";
 
 function App() {
-  const [items, setItems] = useState(["Erstes Element", "Zweites Element"]);
-  const [value, setValue] = useState("");
+  const [searchValue, setSearchValue] = useState("");
+  const [submittedSearch, setSubmittedSearch] = useState("");
+  const [searchError, setSearchError] = useState("");
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    setItems((current) => [...current, trimmed]);
-    setValue("");
-  };
+  const handleSearch = (event) => {
+  event?.preventDefault();
 
-  const handleRemove = (index) => {
-    setItems((current) => current.filter((_, i) => i !== index));
-  };
+  const trimmed = searchValue.trim();
+  if (!trimmed) {
+    setSearchError("Bitte gib einen Ortsnamen ein.");
+    return;
+  }
+
+  setSearchError("");
+  setSubmittedSearch(trimmed);
+};
 
   return (
     <Framework7App name="WebEng2 Map App" theme="auto">
       <View main>
-        <Page>
+        <Page className="app-page">
           <Navbar title="WebEng2 Map App" />
 
-          <Block>
+          <Block className="top-content">
             <OfflineBanner />
+
+            <Searchbar
+              placeholder="Ort suchen"
+              value={searchValue}
+              onInput={(event) => setSearchValue(event.target.value)}
+              onSubmit={handleSearch}
+              disableButtonText="Abbrechen"
+            />
+
+            <Button fill onClick={handleSearch}>
+              Suchen
+            </Button>
+
+            {searchError && (
+              <p style={{ color: "#ef4444", marginTop: "8px" }}>
+                {searchError}
+              </p>
+            )}
           </Block>
 
-          <BlockTitle>Karte</BlockTitle>
-
-          <Card>
-            <CardContent>
-              <Map />
-
-              <p style={{ marginTop: "12px" }}>
-                <a
-                  href="https://www.openstreetmap.org/fixthemap"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Kartenfehler melden
-                </a>
-              </p>
-            </CardContent>
-          </Card>
+          <div className="map-fill">
+            <Map
+              searchPlace={submittedSearch}
+              onSearchError={setSearchError}
+            />
+          </div>
         </Page>
       </View>
     </Framework7App>
