@@ -81,3 +81,34 @@ body {
   margin-bottom: 0.75rem;
   border: 1px solid #fde047;
 }
+
+.search-location-row {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.search-area {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.location-button {
+  width: 50%;
+  align-self: flex-end;
+}
+
+.search-error {
+  color: #ef4444;
+  margin-top: 8px;
+}
+
+.location-error {
+  color: #b91c1c;
+  background: #fee2e2;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+}
