@@ -7,7 +7,6 @@ import {
   useMap,
   useMapEvents,
 } from "react-leaflet";
-import { Button } from "framework7-react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -67,6 +66,18 @@ function MapClickHandler({
       }
     },
   });
+
+  return null;
+}
+
+function FlyToPosition({ position }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (position) {
+      map.setView(position, 16);
+    }
+  }, [position]);
 
   return null;
 }
@@ -221,13 +232,46 @@ async function fetchCoordinatesForPlace(placeName) {
   };
 }
 
-export default function Map({ searchPlace, onSearchError }) {
+export default function Map({ searchPlace, onSearchError, userPosition }) {
   const [placeName, setPlaceName] = useState("");
   const [position, setPosition] = useState(null);
   const [targetPosition, setTargetPosition] = useState(null);
   const [wikiInfo, setWikiInfo] = useState(null);
   const requestId = useRef(0);
 
+  useEffect(() => {
+    if (!userPosition) return;
+
+    const currentId = ++requestId.current;
+
+    setTargetPosition(userPosition);
+    setPlaceName("Ort wird geladen...");
+    setWikiInfo("loading");
+
+    if (!navigator.onLine) {
+      setPlaceName("Kein Internet");
+      setWikiInfo("offline");
+      return;
+    }
+
+    async function loadLocationInfo() {
+      try {
+        const name = await fetchPlaceName(userPosition[0], userPosition[1]);
+        if (requestId.current !== currentId) return;
+        setPlaceName(name);
+
+        const wiki = await fetchWikipediaInfo(name);
+        if (requestId.current !== currentId) return;
+        setWikiInfo(wiki ?? "not_found");
+      } catch {
+        if (requestId.current !== currentId) return;
+        setPlaceName("Ort konnte nicht geladen werden");
+        setWikiInfo("error");
+      }
+    }
+
+    loadLocationInfo();
+  }, [userPosition]);
 
   return (
     <div className="map-wrapper">
@@ -242,6 +286,8 @@ export default function Map({ searchPlace, onSearchError }) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
         />
 
+
+        <FlyToPosition position={userPosition} />
 
         <SearchPlaceHandler
           searchPlace={searchPlace}
