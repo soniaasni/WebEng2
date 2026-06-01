@@ -56,3 +56,23 @@ npm start
 
 > Falls `npm start` nicht funktioniert, verwende alternativ `npm run dev`.
 
+## App auf dem Handy testen (Standort)
+
+Mobile Browser erlauben Geolocation nur über HTTPS. Der Dev-Server läuft daher über HTTPS — Handy und PC müssen im selben WLAN sein.
+
+**Einmalige Vorbereitung (Windows-Firewall, als Administrator):**
+
+```powershell
+New-NetFirewallRule -DisplayName "Vite Dev Server" -Direction Inbound -Protocol TCP -LocalPort 5173,5174,5175 -Action Allow -Profile Any
+```
+
+**Zugriff vom Handy:**
+
+1. `npm start` ausführen — in der Konsolenausgabe erscheint die Network-URL, z. B.:
+   ```
+   ➜  Network: https://172.17.8.97:5173/
+   ```
+2. Die **WLAN-IP** (`ipconfig` → Drahtlos-LAN-Adapter WLAN) im Handy-Browser aufrufen
+3. Zertifikatswarnung einmalig akzeptieren ("Trotzdem weiter" / "Advanced → Proceed")
+4. Auf **"Standort anzeigen"** tippen → Standortberechtigung erlauben → Karte springt zum aktuellen Standort
+
