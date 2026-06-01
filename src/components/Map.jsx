@@ -238,6 +238,13 @@ export default function Map({ searchPlace, onSearchError, userPosition }) {
   const [targetPosition, setTargetPosition] = useState(null);
   const [wikiInfo, setWikiInfo] = useState(null);
   const requestId = useRef(0);
+  const markerRef = useRef(null);
+
+  useEffect(() => {
+    if (wikiInfo && wikiInfo !== "loading") {
+      markerRef.current?.openPopup();
+    }
+  }, [wikiInfo]);
 
   useEffect(() => {
     if (!userPosition) return;
@@ -301,6 +308,7 @@ export default function Map({ searchPlace, onSearchError, userPosition }) {
         {targetPosition && (
           <Marker
             position={targetPosition}
+            ref={markerRef}
             eventHandlers={{
               add: (e) => e.target.openPopup(),
               move: (e) => e.target.openPopup(),
