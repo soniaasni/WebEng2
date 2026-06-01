@@ -22,51 +22,6 @@ L.Icon.Default.mergeOptions({
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-function LocateButton({ setPosition }) {
-  const map = useMap();
-
-  const locateUser = () => {
-    if (!navigator.geolocation) {
-      console.log("Geolocation wird nicht unterstützt.");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const newPosition = [pos.coords.latitude, pos.coords.longitude];
-
-        setPosition(newPosition);
-        map.setView(newPosition, 16);
-
-        console.log("Standort aktualisiert:", newPosition);
-      },
-      (err) => {
-        console.error("Standort konnte nicht geladen werden:", err);
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 10000,
-        maximumAge: 60000,
-      }
-    );
-  };
-
-  return (
-    <Button
-      fill
-      small
-      onClick={locateUser}
-      style={{
-        position: "absolute",
-        top: "10px",
-        right: "10px",
-        zIndex: 1000,
-      }}
-    >
-      📍 Standort anzeigen
-    </Button>
-  );
-}
 
 function MapClickHandler({
   setTargetPosition,
@@ -273,24 +228,6 @@ export default function Map({ searchPlace, onSearchError }) {
   const [wikiInfo, setWikiInfo] = useState(null);
   const requestId = useRef(0);
 
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      console.log("Geolocation wird nicht unterstützt.");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const initialPosition = [pos.coords.latitude, pos.coords.longitude];
-
-        setPosition(initialPosition);
-        console.log("Initialer Standort:", initialPosition);
-      },
-      (err) => {
-        console.error("Standort konnte nicht geladen werden:", err);
-      }
-    );
-  }, []);
 
   return (
     <div className="map-wrapper">
@@ -305,7 +242,6 @@ export default function Map({ searchPlace, onSearchError }) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
         />
 
-        <LocateButton setPosition={setPosition} />
 
         <SearchPlaceHandler
           searchPlace={searchPlace}
