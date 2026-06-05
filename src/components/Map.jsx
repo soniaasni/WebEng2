@@ -234,32 +234,78 @@ async function fetchCoordinatesForPlace(placeName) {
   };
 }
 
-function RoutingMachine({ startPosition, targetPosition }) {
+function RoutingMachine({
+  startPosition,
+  targetPosition,
+  shouldRoute,
+  setShouldRoute,
+  setRouteInfo,
+  setRouteError,
+  setRouteLoading,
+}) {
   const map = useMap();
   const routingControlRef = useRef(null);
 
   useEffect(() => {
-    if (!startPosition || !targetPosition) return;
+    if (!shouldRoute) return;
+
+    if (!startPosition) {
+      setRouteError("Bitte Standortfreigabe erlauben.");
+      setRouteInfo(null);
+      setShouldRoute(false);
+      return;
+    }
+
+    if (!targetPosition) {
+      setRouteError("Bitte zuerst ein Ziel auswählen.");
+      setRouteInfo(null);
+      setShouldRoute(false);
+      return;
+    }
 
     if (routingControlRef.current) {
       map.removeControl(routingControlRef.current);
+      routingControlRef.current = null;
     }
 
-    routingControlRef.current = L.Routing.control({
+    const routingControl = L.Routing.control({
       waypoints: [
         L.latLng(startPosition[0], startPosition[1]),
         L.latLng(targetPosition[0], targetPosition[1]),
       ],
       router: L.Routing.osrmv1({
-        serviceUrl: "https://router.project-osrm.org/route/v1",
-        profile: "driving",
+        serviceUrl: "https://routing.openstreetmap.de/routed-bike/route/v1",
+        profile: "bike",
       }),
       routeWhileDragging: false,
       addWaypoints: false,
       draggableWaypoints: false,
       fitSelectedRoutes: true,
       show: false,
-    }).addTo(map);
+    });
+
+    routingControl.on("routesfound", (event) => {
+      const route = event.routes[0];
+
+      setRouteInfo({
+        distanceKm: (route.summary.totalDistance / 1000).toFixed(1),
+        durationMin: Math.round(route.summary.totalTime / 60),
+      });
+      
+      setRouteLoading(false);
+      setRouteError("");
+      setShouldRoute(false);
+    });
+
+    routingControl.on("routingerror", () => {
+      setRouteLoading(false);
+      setRouteInfo(null);
+      setRouteError("Route konnte nicht berechnet werden.");
+      setShouldRoute(false);
+    });
+
+    routingControl.addTo(map);
+    routingControlRef.current = routingControl;
 
     return () => {
       if (routingControlRef.current) {
@@ -267,15 +313,32 @@ function RoutingMachine({ startPosition, targetPosition }) {
         routingControlRef.current = null;
       }
     };
-  }, [map, startPosition, targetPosition]);
+  }, [
+    map,
+    startPosition,
+    targetPosition,
+    shouldRoute,
+    setShouldRoute,
+    setRouteInfo,
+    setRouteError,
+  ]);
 
   return null;
 }
 
-export default function Map({ searchPlace, onSearchError, userPosition }) {
+export default function Map({ 
+  searchPlace,
+  onSearchError,
+  userPosition,
+  setUserPosition,
+  targetPosition,
+  setTargetPosition,
+  shouldRoute,
+  setShouldRoute,
+  setRouteInfo,
+  setRouteError,
+  setRouteLoading, }) {
   const [placeName, setPlaceName] = useState("");
-  const [position, setPosition] = useState(null);
-  const [targetPosition, setTargetPosition] = useState(null);
   const [wikiInfo, setWikiInfo] = useState(null);
   const requestId = useRef(0);
   const markerRef = useRef(null);
@@ -323,7 +386,7 @@ export default function Map({ searchPlace, onSearchError, userPosition }) {
   return (
     <div className="map-wrapper">
       <MapContainer
-        center={position || [51.1657, 10.4515]}
+        center={userPosition || [51.1657, 10.4515]}
         zoom={13}
         closePopupOnClick={false}
         style={{ height: "100%", width: "100%" }}
@@ -346,8 +409,13 @@ export default function Map({ searchPlace, onSearchError, userPosition }) {
         />
 
         <RoutingMachine
-          startPosition={userPosition || position}
+          startPosition={userPosition}
           targetPosition={targetPosition}
+          shouldRoute={shouldRoute}
+          setShouldRoute={setShouldRoute}
+          setRouteInfo={setRouteInfo}
+          setRouteError={setRouteError}
+          setRouteLoading={setRouteLoading}
         />
 
         {targetPosition && (

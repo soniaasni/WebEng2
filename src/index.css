@@ -31,8 +31,9 @@ body {
 
 /* Bereich oberhalb der Karte: Offline-Banner + Suchleiste + Button */
 .top-content {
-  margin: 0;
-  padding: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
 }
 
 /* Karte nimmt den restlichen sichtbaren Platz ein */
@@ -83,21 +84,41 @@ body {
 }
 
 .search-location-row {
+  width: 100%;
   display: flex;
-  gap: 12px;
-  align-items: stretch;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .search-area {
-  width: 50%;
   display: flex;
-  flex-direction: column;
   gap: 8px;
+  align-items: center;
+}
+
+.search-area .searchbar {
+  flex: 1;
+  margin: 0;
+}
+
+.search-button {
+  width: 140px;
+}
+
+.action-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.route-button{
+  flex: 1;
+  height: auto;
 }
 
 .location-button {
-  width: 50%;
-  align-self: flex-end;
+  flex: 1;
+  height: auto;
 }
 
 .search-error {
@@ -111,4 +132,32 @@ body {
   padding: 8px 12px;
   border-radius: 6px;
   margin-top: 8px;
+}
+
+.leaflet-routing-container {
+  display: none;
+}
+
+.route-info {
+   margin: 8px 0 0;
+  padding: 8px 12px;
+  background: #e0f2fe;
+  color: #075985;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.route-error {
+  position: absolute;
+  top: 55px;
+  left: 10px;
+  z-index: 1000;
+
+  background: #fee2e2;
+  color: #b91c1c;
+
+  padding: 8px 12px;
+  border-radius: 6px;
+
+  font-size: 0.9rem;
 }
