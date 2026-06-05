@@ -9,6 +9,8 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet-routing-machine";
+import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 
 // Fix für fehlende Marker-Icons in Vite/React-Projekten
 delete L.Icon.Default.prototype._getIconUrl;
@@ -232,6 +234,44 @@ async function fetchCoordinatesForPlace(placeName) {
   };
 }
 
+function RoutingMachine({ startPosition, targetPosition }) {
+  const map = useMap();
+  const routingControlRef = useRef(null);
+
+  useEffect(() => {
+    if (!startPosition || !targetPosition) return;
+
+    if (routingControlRef.current) {
+      map.removeControl(routingControlRef.current);
+    }
+
+    routingControlRef.current = L.Routing.control({
+      waypoints: [
+        L.latLng(startPosition[0], startPosition[1]),
+        L.latLng(targetPosition[0], targetPosition[1]),
+      ],
+      router: L.Routing.osrmv1({
+        serviceUrl: "https://router.project-osrm.org/route/v1",
+        profile: "driving",
+      }),
+      routeWhileDragging: false,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: true,
+      show: false,
+    }).addTo(map);
+
+    return () => {
+      if (routingControlRef.current) {
+        map.removeControl(routingControlRef.current);
+        routingControlRef.current = null;
+      }
+    };
+  }, [map, startPosition, targetPosition]);
+
+  return null;
+}
+
 export default function Map({ searchPlace, onSearchError, userPosition }) {
   const [placeName, setPlaceName] = useState("");
   const [position, setPosition] = useState(null);
@@ -303,6 +343,11 @@ export default function Map({ searchPlace, onSearchError, userPosition }) {
           setWikiInfo={setWikiInfo}
           onSearchError={onSearchError}
           requestId={requestId}
+        />
+
+        <RoutingMachine
+          startPosition={userPosition || position}
+          targetPosition={targetPosition}
         />
 
         {targetPosition && (
