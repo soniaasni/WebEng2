@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   App as Framework7App,
   View,
@@ -18,6 +18,11 @@ function App() {
   const [searchError, setSearchError] = useState("");
   const [locationError, setLocationError] = useState("");
   const [userPosition, setUserPosition] = useState(null);
+  const [shouldRoute, setShouldRoute] = useState(false);
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [routeError, setRouteError] = useState("");
+  const [targetPosition, setTargetPosition] = useState(null);
+  const [routeLoading, setRouteLoading] = useState(false);
 
   const handleSearch = (event) => {
     event?.preventDefault();
@@ -33,54 +38,44 @@ function App() {
   };
 
   const handleLocateUser = () => {
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation wird von diesem Browser nicht unterstützt.");
-      return;
-    setLocationError("");
-    }
+  if (!navigator.geolocation) {
+    showLocationError("Geolocation wird von diesem Browser nicht unterstützt.");
+    return;
+  }
 
-  const showLocationError = (message) => {
-    setLocationError(message);
+  setLocationError("");
 
-    setTimeout(() => {
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const coords = [pos.coords.latitude, pos.coords.longitude];
+
+      setUserPosition(coords);
       setLocationError("");
-    }, 3000);
-  };
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const newPosition = [
-          pos.coords.latitude,
-          pos.coords.longitude,
-        ];
+      console.log("Standort über Button aktualisiert:", coords);
+    },
+    (err) => {
+      console.error("Standort konnte nicht geladen werden:", err);
 
-        setLocationError("");
-        setUserPosition(newPosition);
-
-        console.log("Standort gefunden:", newPosition);
-      },
-      (err) => {
-        console.error("Standort konnte nicht geladen werden:", err);
-
-        if (err.code === 1) {
-          showLocationError(
-            "Standortzugriff verweigert. Bitte aktiviere die Standortfreigabe."
-          );
-        } else if (err.code === 2) {
-          setLocationError("Standort konnte nicht ermittelt werden.");
-        } else if (err.code === 3) {
-          setLocationError("Zeitüberschreitung beim Abrufen des Standorts.");
-        } else {
-          setLocationError("Standort konnte nicht geladen werden.");
-        }
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 10000,
-        maximumAge: 60000,
+      if (err.code === 1) {
+        showLocationError(
+          "Standortzugriff verweigert. Bitte aktiviere die Standortfreigabe."
+        );
+      } else if (err.code === 2) {
+        showLocationError("Standort konnte nicht ermittelt werden.");
+      } else if (err.code === 3) {
+        showLocationError("Zeitüberschreitung beim Abrufen des Standorts.");
+      } else {
+        showLocationError("Standort konnte nicht geladen werden.");
       }
-    );
-  };
+    },
+    {
+      enableHighAccuracy: false,
+      timeout: 10000,
+      maximumAge: 60000,
+    }
+  );
+};
 
   return (
     <Framework7App name="WebEng2 Map App" theme="auto">
@@ -101,18 +96,66 @@ function App() {
                   disableButtonText="Abbrechen"
                 />
 
-                <Button fill onClick={handleSearch}>
+                <Button fill  className="search-button" onClick={handleSearch}>
                   Suchen
                 </Button>
               </div>
 
-              <Button
-                fill
-                className="location-button"
-                onClick={handleLocateUser}
-              >
-                📍 Standort anzeigen
-              </Button>
+              <div className="action-row">
+                <Button
+                  fill
+                  small
+                  className="route-button"
+                  onClick={() => {
+                    setRouteError("");
+                    setRouteInfo(null);
+
+                    if (!userPosition) {
+                      setRouteError("Bitte Standortfreigabe erlauben.");
+                      setRouteLoading(false);
+                      return;
+                    }
+
+                    if (!targetPosition) {
+                      setRouteError("Bitte zuerst ein Ziel auswählen.");
+                      setRouteLoading(false);
+                      return;
+                    }
+
+                    setRouteLoading(true);
+                    setShouldRoute(true);
+                  }}
+                >
+                  Route berechnen
+                </Button>
+
+                <Button
+                  fill
+                  className="location-button"
+                  onClick={handleLocateUser}
+                >
+                  📍 Standort anzeigen
+                </Button>
+              </div>
+              
+              {routeLoading && (
+                <p className="route-info">
+                  Route wird berechnet...
+                </p>
+              )}
+
+              {routeInfo && (
+                <p className="route-info">
+                  Entfernung: {routeInfo.distanceKm} km<br />
+                  Fahrzeit: {routeInfo.durationMin} Minuten
+                </p>
+              )}
+
+              {routeError && (
+                <p className="route-error">
+                  {routeError}
+                </p>
+              )}
             </div>
 
             {locationError && (
@@ -133,6 +176,14 @@ function App() {
               searchPlace={submittedSearch}
               onSearchError={setSearchError}
               userPosition={userPosition}
+              setUserPosition={setUserPosition}
+              targetPosition={targetPosition}
+              setTargetPosition={setTargetPosition}
+              shouldRoute={shouldRoute}
+              setShouldRoute={setShouldRoute}
+              setRouteInfo={setRouteInfo}
+              setRouteError={setRouteError}
+              setRouteLoading={setRouteLoading}
             />
           </div>
         </Page>
