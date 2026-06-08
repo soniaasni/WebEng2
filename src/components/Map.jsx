@@ -23,6 +23,38 @@ L.Icon.Default.mergeOptions({
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
+// Grüner Start-Marker (A)
+const startIcon = L.divIcon({
+  className: "",
+  html: `<div style="
+    background: #22c55e;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  "></div>`,
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+  popupAnchor: [0, -18],
+});
+
+// Roter Ziel-Marker (B)
+const targetIcon = L.divIcon({
+  className: "",
+  html: `<div style="
+    background: #ef4444;
+    width: 30px;
+    height: 30px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  "></div>`,
+  iconSize: [30, 30],
+  iconAnchor: [8, 30],
+  popupAnchor: [7, -32],
+});
 
 function MapClickHandler({
   setTargetPosition,
@@ -48,20 +80,15 @@ function MapClickHandler({
       }
 
       try {
-        const name = await fetchPlaceName(e.latlng.lat, e.latlng.lng);
-
+        const { displayName, searchTerm } = await fetchLocationInfo(e.latlng.lat, e.latlng.lng);
         if (requestId.current !== currentId) return;
+        setPlaceName(displayName);
 
-        setPlaceName(name);
-
-        const wiki = await fetchWikipediaInfo(name);
-
+        const wiki = await fetchWikipediaInfo(searchTerm);
         if (requestId.current !== currentId) return;
-
         setWikiInfo(wiki ?? "not_found");
       } catch (error) {
         if (requestId.current !== currentId) return;
-
         console.error("Reverse Geocoding fehlgeschlagen:", error);
         setPlaceName("Ort konnte nicht geladen werden");
         setWikiInfo("error");
@@ -108,7 +135,6 @@ function SearchPlaceHandler({
 
       try {
         const result = await fetchCoordinatesForPlace(searchPlace);
-
         if (requestId.current !== currentId) return;
 
         if (!result) {
@@ -117,24 +143,21 @@ function SearchPlaceHandler({
         }
 
         const coords = [result.lat, result.lon];
+        const parts = result.displayName.split(",");
+        const shortName = parts.slice(0, 2).join(",").trim();
+        const wikiTerm = parts[0].trim();
 
         setTargetPosition(coords);
-        setPlaceName(result.displayName);
+        setPlaceName(shortName);
         setWikiInfo("loading");
         onSearchError?.("");
-
         map.setView(coords, 14);
 
-        const wiki = await fetchWikipediaInfo(result.displayName);
-
+        const wiki = await fetchWikipediaInfo(wikiTerm);
         if (requestId.current !== currentId) return;
-
         setWikiInfo(wiki ?? "not_found");
-
-        console.log("Ort über Suche gefunden:", result);
       } catch (error) {
         if (requestId.current !== currentId) return;
-
         console.error("Ortssuche fehlgeschlagen:", error);
         onSearchError?.("Ortssuche konnte nicht ausgeführt werden.");
         setWikiInfo("error");
@@ -143,6 +166,109 @@ function SearchPlaceHandler({
 
     search();
   }, [searchPlace]);
+
+  return null;
+}
+
+function RoutingMachine({
+  startPosition,
+  targetPosition,
+  shouldRoute,
+  setShouldRoute,
+  setRouteInfo,
+  setRouteError,
+  setRouteLoading,
+  targetPlaceName,
+}) {
+  const map = useMap();
+  const routingControlRef = useRef(null);
+
+  useEffect(() => {
+    if (!shouldRoute) return;
+
+    if (!startPosition) {
+      setRouteError("Bitte Standortfreigabe erlauben.");
+      setRouteInfo(null);
+      setShouldRoute(false);
+      return;
+    }
+
+    if (!targetPosition) {
+      setRouteError("Bitte zuerst ein Ziel auswählen.");
+      setRouteInfo(null);
+      setShouldRoute(false);
+      return;
+    }
+
+    // Alte Route entfernen
+    if (routingControlRef.current) {
+      map.removeControl(routingControlRef.current);
+      routingControlRef.current = null;
+    }
+
+    const routingControl = L.Routing.control({
+      waypoints: [
+        L.latLng(startPosition[0], startPosition[1]),
+        L.latLng(targetPosition[0], targetPosition[1]),
+      ],
+      router: L.Routing.osrmv1({
+        serviceUrl: "https://routing.openstreetmap.de/routed-car/route/v1",
+        profile: "car",
+      }),
+      // Eigene Marker übernehmen — LRM-Waypoint-Marker deaktivieren
+      createMarker: () => null,
+      // Blaue Route mit Outline für gute Sichtbarkeit
+      lineOptions: {
+        styles: [
+          { color: "#1e40af", weight: 9, opacity: 0.25 },
+          { color: "#3b82f6", weight: 5, opacity: 0.9 },
+        ],
+        extendToWaypoints: false,
+        missingRouteTolerance: 0,
+      },
+      routeWhileDragging: false,
+      addWaypoints: false,
+      draggableWaypoints: false,
+      fitSelectedRoutes: true,
+      show: false,
+    });
+
+    routingControl.on("routesfound", (event) => {
+      const route = event.routes[0];
+      setRouteInfo({
+        distanceKm: (route.summary.totalDistance / 1000).toFixed(1),
+        durationMin: Math.round(route.summary.totalTime / 60),
+        from: "Dein Standort",
+        to: targetPlaceName || "Ziel",
+      });
+      setRouteLoading(false);
+      setRouteError("");
+      setShouldRoute(false);
+    });
+
+    routingControl.on("routingerror", () => {
+      setRouteLoading(false);
+      setRouteInfo(null);
+      setRouteError("Route konnte nicht berechnet werden.");
+      setShouldRoute(false);
+    });
+
+    routingControl.addTo(map);
+    routingControlRef.current = routingControl;
+
+    // Kein Cleanup hier — die Route soll nach dem Berechnen sichtbar bleiben.
+    // Cleanup nur beim Unmount (useEffect unten).
+  }, [shouldRoute]);
+
+  // Route nur beim Unmount entfernen
+  useEffect(() => {
+    return () => {
+      if (routingControlRef.current) {
+        map.removeControl(routingControlRef.current);
+        routingControlRef.current = null;
+      }
+    };
+  }, [map]);
 
   return null;
 }
@@ -162,7 +288,6 @@ async function fetchWikipediaInfo(placeName) {
   if (!pages) return null;
 
   const page = Object.values(pages)[0];
-
   if (page.missing !== undefined || page.pageid === undefined) return null;
 
   const extract = page.extract?.trim();
@@ -185,28 +310,35 @@ async function fetchWikipediaInfo(placeName) {
   };
 }
 
-async function fetchPlaceName(lat, lon) {
+async function fetchLocationInfo(lat, lon) {
   const url =
     `https://nominatim.openstreetmap.org/reverse?` +
     `lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
 
   const response = await fetch(url, {
-    headers: {
-      "Accept-Language": "de",
-    },
+    headers: { "Accept-Language": "de" },
   });
 
   const data = await response.json();
+  const addr = data.address || {};
 
-  return (
-    data.address?.city ||
-    data.address?.town ||
-    data.address?.village ||
-    data.address?.municipality ||
-    data.address?.county ||
-    data.display_name ||
-    "Unbekannter Ort"
-  );
+  const city =
+    addr.city || addr.town || addr.village || addr.municipality || addr.county || "";
+  const road = addr.road;
+  const houseNumber = addr.house_number;
+
+  let displayName;
+  if (road) {
+    const street = houseNumber ? `${road} ${houseNumber}` : road;
+    displayName = city ? `${street}, ${city}` : street;
+  } else {
+    displayName = city || data.display_name || "Unbekannter Ort";
+  }
+
+  return {
+    displayName,
+    searchTerm: city || road || data.display_name?.split(",")[0]?.trim() || "Unbekannter Ort",
+  };
 }
 
 async function fetchCoordinatesForPlace(placeName) {
@@ -216,16 +348,12 @@ async function fetchCoordinatesForPlace(placeName) {
     `&format=json&limit=1&addressdetails=1`;
 
   const response = await fetch(url, {
-    headers: {
-      "Accept-Language": "de",
-    },
+    headers: { "Accept-Language": "de" },
   });
 
   const data = await response.json();
 
-  if (!data || data.length === 0) {
-    return null;
-  }
+  if (!data || data.length === 0) return null;
 
   return {
     lat: Number(data[0].lat),
@@ -234,126 +362,36 @@ async function fetchCoordinatesForPlace(placeName) {
   };
 }
 
-function RoutingMachine({
-  startPosition,
-  targetPosition,
-  shouldRoute,
-  setShouldRoute,
-  setRouteInfo,
-  setRouteError,
-  setRouteLoading,
-}) {
-  const map = useMap();
-  const routingControlRef = useRef(null);
-
-  useEffect(() => {
-    if (!shouldRoute) return;
-
-    if (!startPosition) {
-      setRouteError("Bitte Standortfreigabe erlauben.");
-      setRouteInfo(null);
-      setShouldRoute(false);
-      return;
-    }
-
-    if (!targetPosition) {
-      setRouteError("Bitte zuerst ein Ziel auswählen.");
-      setRouteInfo(null);
-      setShouldRoute(false);
-      return;
-    }
-
-    if (routingControlRef.current) {
-      map.removeControl(routingControlRef.current);
-      routingControlRef.current = null;
-    }
-
-    const routingControl = L.Routing.control({
-      waypoints: [
-        L.latLng(startPosition[0], startPosition[1]),
-        L.latLng(targetPosition[0], targetPosition[1]),
-      ],
-      router: L.Routing.osrmv1({
-        serviceUrl: "https://routing.openstreetmap.de/routed-bike/route/v1",
-        profile: "bike",
-      }),
-      routeWhileDragging: false,
-      addWaypoints: false,
-      draggableWaypoints: false,
-      fitSelectedRoutes: true,
-      show: false,
-    });
-
-    routingControl.on("routesfound", (event) => {
-      const route = event.routes[0];
-
-      setRouteInfo({
-        distanceKm: (route.summary.totalDistance / 1000).toFixed(1),
-        durationMin: Math.round(route.summary.totalTime / 60),
-      });
-      
-      setRouteLoading(false);
-      setRouteError("");
-      setShouldRoute(false);
-    });
-
-    routingControl.on("routingerror", () => {
-      setRouteLoading(false);
-      setRouteInfo(null);
-      setRouteError("Route konnte nicht berechnet werden.");
-      setShouldRoute(false);
-    });
-
-    routingControl.addTo(map);
-    routingControlRef.current = routingControl;
-
-    return () => {
-      if (routingControlRef.current) {
-        map.removeControl(routingControlRef.current);
-        routingControlRef.current = null;
-      }
-    };
-  }, [
-    map,
-    startPosition,
-    targetPosition,
-    shouldRoute,
-    setShouldRoute,
-    setRouteInfo,
-    setRouteError,
-  ]);
-
-  return null;
-}
-
-export default function Map({ 
+export default function Map({
   searchPlace,
   onSearchError,
   userPosition,
-  setUserPosition,
   targetPosition,
   setTargetPosition,
   shouldRoute,
   setShouldRoute,
   setRouteInfo,
   setRouteError,
-  setRouteLoading, }) {
+  setRouteLoading,
+  routeInfo,
+}) {
   const [placeName, setPlaceName] = useState("");
   const [wikiInfo, setWikiInfo] = useState(null);
   const requestId = useRef(0);
   const markerRef = useRef(null);
 
+  // Popup nach Wikipedia-Laden öffnen
   useEffect(() => {
     if (wikiInfo && wikiInfo !== "loading") {
       markerRef.current?.openPopup();
     }
   }, [wikiInfo]);
 
+  // Pin + Wikipedia beim Standort-Button
   useEffect(() => {
     if (!userPosition) return;
 
     const currentId = ++requestId.current;
-
     setTargetPosition(userPosition);
     setPlaceName("Ort wird geladen...");
     setWikiInfo("loading");
@@ -366,11 +404,11 @@ export default function Map({
 
     async function loadLocationInfo() {
       try {
-        const name = await fetchPlaceName(userPosition[0], userPosition[1]);
+        const { displayName, searchTerm } = await fetchLocationInfo(userPosition[0], userPosition[1]);
         if (requestId.current !== currentId) return;
-        setPlaceName(name);
+        setPlaceName(displayName);
 
-        const wiki = await fetchWikipediaInfo(name);
+        const wiki = await fetchWikipediaInfo(searchTerm);
         if (requestId.current !== currentId) return;
         setWikiInfo(wiki ?? "not_found");
       } catch {
@@ -382,6 +420,24 @@ export default function Map({
 
     loadLocationInfo();
   }, [userPosition]);
+
+  // Routeninfo-Banner aktualisieren sobald Ortsname aufgelöst wird
+  useEffect(() => {
+    if (
+      !placeName ||
+      placeName === "Ort wird geladen..." ||
+      placeName === "Kein Internet" ||
+      placeName === "Ort konnte nicht geladen werden"
+    ) return;
+    setRouteInfo((prev) => (prev ? { ...prev, to: placeName } : null));
+  }, [placeName]);
+
+  // Route auto-aktualisieren wenn neues Ziel gewählt und Route bereits aktiv
+  useEffect(() => {
+    if (!targetPosition || !routeInfo) return;
+    setRouteLoading(true);
+    setShouldRoute(true);
+  }, [targetPosition]);
 
   return (
     <div className="map-wrapper">
@@ -395,7 +451,6 @@ export default function Map({
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
         />
-
 
         <FlyToPosition position={userPosition} />
 
@@ -416,11 +471,26 @@ export default function Map({
           setRouteInfo={setRouteInfo}
           setRouteError={setRouteError}
           setRouteLoading={setRouteLoading}
+          targetPlaceName={placeName}
         />
 
+        {/* Grüner A-Marker an der Startposition (nur wenn Route aktiv) */}
+        {userPosition && routeInfo && (
+          <Marker position={userPosition} icon={startIcon}>
+            <Popup>
+              <strong>Dein Standort</strong>
+              <p style={{ margin: "4px 0 0", fontSize: "0.85em", color: "#64748b" }}>
+                Startpunkt der Route
+              </p>
+            </Popup>
+          </Marker>
+        )}
+
+        {/* Roter B-Marker am Zielort */}
         {targetPosition && (
           <Marker
             position={targetPosition}
+            icon={targetIcon}
             ref={markerRef}
             eventHandlers={{
               add: (e) => e.target.openPopup(),
@@ -435,25 +505,21 @@ export default function Map({
                   Wikipedia wird geladen…
                 </p>
               )}
-
               {wikiInfo === "offline" && (
                 <p style={{ margin: "6px 0 0", color: "#f97316", fontSize: "0.85em" }}>
                   Wikipedia ist offline nicht verfügbar.
                 </p>
               )}
-
               {wikiInfo === "not_found" && (
                 <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: "0.85em" }}>
                   Kein Wikipedia-Artikel gefunden.
                 </p>
               )}
-
               {wikiInfo === "error" && (
                 <p style={{ margin: "6px 0 0", color: "#ef4444", fontSize: "0.85em" }}>
                   Wikipedia nicht erreichbar.
                 </p>
               )}
-
               {wikiInfo && typeof wikiInfo === "object" && (
                 <div style={{ marginTop: "6px", fontSize: "0.85em" }}>
                   <p style={{ margin: "0 0 4px" }}>{wikiInfo.extract}</p>
