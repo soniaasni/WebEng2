@@ -34,7 +34,7 @@ export default function OfflineBanner() {
 
   return (
     <div className="offline-banner" role="status" aria-live="polite">
-      📡 Keine Internetverbindung – die App läuft im Offline-Modus
+      Keine Internetverbindung – die App läuft im Offline-Modus
     </div>
   );
 }

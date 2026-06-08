@@ -24,6 +24,34 @@ Kommunikation untereinander aufrecht erhält, das Ziel ständig kontrolliert und
 übergeben werden. Der Scrum-Master ist für die vollständige Auslieferung der PWA zum Ende des Vorlesungs
 quartals oder nach individueller zeitlicher Absprache mit dem Dozenten verantwortlich.
 
+## Live-Demo
+
+Die App ist auf GitHub Pages deployed und direkt aufrufbar:
+
+**https://soniaasni.github.io/WebEng2/**
+
+> Der GitHub Actions Workflow deployt automatisch bei jedem Push auf `develop`.
+
+---
+
+## PWA installieren
+
+Die App kann als Progressive Web App auf dem Gerät installiert werden:
+
+**Android (Chrome):**
+1. App im Browser öffnen
+2. Menü (⋮) → „App installieren" oder „Zum Startbildschirm hinzufügen"
+
+**iOS (Safari):**
+1. App im Safari öffnen
+2. Teilen-Symbol → „Zum Home-Bildschirm"
+
+**Desktop (Chrome/Edge):**
+1. In der Adressleiste erscheint ein Installations-Symbol (⊕)
+2. Darauf klicken → „Installieren"
+
+---
+
 ## React MVP starten und testen
 
 1. Projektverzeichnis öffnen:

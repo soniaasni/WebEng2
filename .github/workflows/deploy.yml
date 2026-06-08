@@ -1,0 +1,42 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  workflow_dispatch: # manuell auslösbar
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          # Base-Pfad für GitHub Pages — muss dem Repository-Namen entsprechen
+          VITE_BASE_URL: /WebEng2/
+
+      - name: Auf GitHub Pages deployen
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          # SPA-Routing: 404 auf index.html umleiten
+          enable_jekyll: false
