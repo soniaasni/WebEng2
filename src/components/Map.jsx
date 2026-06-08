@@ -173,6 +173,7 @@ function SearchPlaceHandler({
 function RoutingMachine({
   startPosition,
   startPositionOverride,
+  startLabel,
   targetPosition,
   shouldRoute,
   setShouldRoute,
@@ -241,7 +242,7 @@ function RoutingMachine({
       setRouteInfo({
         distanceKm: (route.summary.totalDistance / 1000).toFixed(1),
         durationMin: Math.round(route.summary.totalTime / 60),
-        from: "Dein Standort",
+        from: startLabel || "Dein Standort",
         to: targetPlaceName || "Ziel",
       });
       setRouteLoading(false);
@@ -378,6 +379,7 @@ export default function Map({
   setRouteLoading,
   routeInfo,
   routeStartPosition,
+  routeStartLabel,
 }) {
   const [placeName, setPlaceName] = useState("");
   const [wikiInfo, setWikiInfo] = useState(null);
@@ -470,6 +472,7 @@ export default function Map({
         <RoutingMachine
           startPosition={userPosition}
           startPositionOverride={routeStartPosition}
+          startLabel={routeStartLabel}
           targetPosition={targetPosition}
           shouldRoute={shouldRoute}
           setShouldRoute={setShouldRoute}

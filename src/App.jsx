@@ -153,11 +153,10 @@ function App() {
 
               {/* Eigener Startort */}
               <div className="start-row">
-                <span className="start-icon">🚩</span>
                 <input
                   className="start-input"
                   type="text"
-                  placeholder="Startort (leer = aktueller GPS-Standort)"
+                  placeholder="Start auswählen (leer = GPS-Standort)"
                   value={startText}
                   onChange={(e) => setStartText(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleRouteClick()}
@@ -177,7 +176,7 @@ function App() {
                   onClick={handleRouteClick}
                   disabled={startLoading}
                 >
-                  {startLoading ? "Lade…" : "🗺 Route berechnen"}
+                  {startLoading ? "Lade…" : "Route berechnen"}
                 </Button>
                 <Button
                   outline
@@ -231,6 +230,7 @@ function App() {
               setRouteLoading={setRouteLoading}
               routeInfo={routeInfo}
               routeStartPosition={routeStartPosition}
+              routeStartLabel={startText.trim() || null}
             />
           </div>
         </Page>
