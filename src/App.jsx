@@ -37,6 +37,11 @@ function App() {
     setSubmittedSearch(trimmed);
   };
 
+  const showLocationError = (message) => {
+    setLocationError(message);
+    setTimeout(() => setLocationError(""), 4000);
+  };
+
   const handleLocateUser = () => {
   if (!navigator.geolocation) {
     showLocationError("Geolocation wird von diesem Browser nicht unterstützt.");
@@ -140,15 +145,15 @@ function App() {
               
               {routeLoading && (
                 <p className="route-info">
-                  Route wird berechnet...
+                  Route wird berechnet…
                 </p>
               )}
 
-              {routeInfo && (
-                <p className="route-info">
-                  Entfernung: {routeInfo.distanceKm} km<br />
-                  Fahrzeit: {routeInfo.durationMin} Minuten
-                </p>
+              {routeInfo && !routeLoading && (
+                <div className="route-info">
+                  <strong>Fahrradroute</strong>
+                  🚴 {routeInfo.distanceKm} km &nbsp;·&nbsp; ⏱ {routeInfo.durationMin} Min.
+                </div>
               )}
 
               {routeError && (
@@ -184,6 +189,7 @@ function App() {
               setRouteInfo={setRouteInfo}
               setRouteError={setRouteError}
               setRouteLoading={setRouteLoading}
+              routeInfo={routeInfo}
             />
           </div>
         </Page>

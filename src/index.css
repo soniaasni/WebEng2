@@ -139,25 +139,37 @@ body {
 }
 
 .route-info {
-   margin: 8px 0 0;
-  padding: 8px 12px;
-  background: #e0f2fe;
-  color: #075985;
-  border-radius: 6px;
+  margin: 8px 0 0;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #dbeafe, #e0f2fe);
+  color: #1e40af;
+  border-radius: 8px;
   font-size: 0.9rem;
+  border-left: 4px solid #3b82f6;
+  line-height: 1.6;
+}
+
+.route-info strong {
+  display: block;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #3b82f6;
+  margin-bottom: 2px;
 }
 
 .route-error {
-  position: absolute;
-  top: 55px;
-  left: 10px;
-  z-index: 1000;
-
+  margin: 6px 0 0;
+  padding: 8px 12px;
   background: #fee2e2;
   color: #b91c1c;
-
-  padding: 8px 12px;
   border-radius: 6px;
-
   font-size: 0.9rem;
+  border-left: 4px solid #ef4444;
+}
+
+/* Leaflet-Routing-Machine Panel komplett ausblenden */
+.leaflet-routing-container,
+.leaflet-routing-container-hide {
+  display: none !important;
 }
