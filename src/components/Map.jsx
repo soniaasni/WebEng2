@@ -172,6 +172,7 @@ function SearchPlaceHandler({
 
 function RoutingMachine({
   startPosition,
+  startPositionOverride,
   targetPosition,
   shouldRoute,
   setShouldRoute,
@@ -186,8 +187,10 @@ function RoutingMachine({
   useEffect(() => {
     if (!shouldRoute) return;
 
-    if (!startPosition) {
-      setRouteError("Bitte Standortfreigabe erlauben.");
+    const effectiveStart = startPositionOverride || startPosition;
+
+    if (!effectiveStart) {
+      setRouteError("Bitte Standortfreigabe erlauben oder Startort eingeben.");
       setRouteInfo(null);
       setShouldRoute(false);
       return;
@@ -208,7 +211,7 @@ function RoutingMachine({
 
     const routingControl = L.Routing.control({
       waypoints: [
-        L.latLng(startPosition[0], startPosition[1]),
+        L.latLng(effectiveStart[0], effectiveStart[1]),
         L.latLng(targetPosition[0], targetPosition[1]),
       ],
       router: L.Routing.osrmv1({
@@ -374,6 +377,7 @@ export default function Map({
   setRouteError,
   setRouteLoading,
   routeInfo,
+  routeStartPosition,
 }) {
   const [placeName, setPlaceName] = useState("");
   const [wikiInfo, setWikiInfo] = useState(null);
@@ -465,6 +469,7 @@ export default function Map({
 
         <RoutingMachine
           startPosition={userPosition}
+          startPositionOverride={routeStartPosition}
           targetPosition={targetPosition}
           shouldRoute={shouldRoute}
           setShouldRoute={setShouldRoute}
@@ -474,11 +479,11 @@ export default function Map({
           targetPlaceName={placeName}
         />
 
-        {/* Grüner A-Marker an der Startposition (nur wenn Route aktiv) */}
-        {userPosition && routeInfo && (
-          <Marker position={userPosition} icon={startIcon}>
+        {/* Grüner Marker an der Startposition (nur wenn Route aktiv) */}
+        {routeInfo && (routeStartPosition || userPosition) && (
+          <Marker position={routeStartPosition || userPosition} icon={startIcon}>
             <Popup>
-              <strong>Dein Standort</strong>
+              <strong>{routeStartPosition ? "Eigener Startort" : "Dein Standort"}</strong>
               <p style={{ margin: "4px 0 0", fontSize: "0.85em", color: "#64748b" }}>
                 Startpunkt der Route
               </p>
