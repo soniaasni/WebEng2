@@ -265,13 +265,19 @@ function RoutingMachine({
     routingControl.addTo(map);
     routingControlRef.current = routingControl;
 
+    // Kein Cleanup hier — die Route soll nach dem Berechnen sichtbar bleiben.
+    // Cleanup nur beim Unmount (useEffect unten).
+  }, [shouldRoute]);
+
+  // Route nur beim Unmount entfernen
+  useEffect(() => {
     return () => {
       if (routingControlRef.current) {
         map.removeControl(routingControlRef.current);
         routingControlRef.current = null;
       }
     };
-  }, [shouldRoute]);
+  }, [map]);
 
   return null;
 }
