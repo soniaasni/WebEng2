@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Offline – WebEng2 Map App</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, sans-serif;
+        background: #f5f7fb;
+        color: #20232a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+
+      .container {
+        text-align: center;
+        padding: 2rem;
+        max-width: 400px;
+      }
+
+      .icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        margin: 0 0 0.75rem;
+      }
+
+      p {
+        color: #64748b;
+        margin: 0 0 1.5rem;
+        line-height: 1.6;
+      }
+
+      button {
+        padding: 0.75rem 1.5rem;
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #1d4ed8;
+      }
+
+      .offline-banner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: #fef08a;
+        color: #713f12;
+        text-align: center;
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        border-bottom: 1px solid #fde047;
+        z-index: 100;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="offline-banner">📡 Du bist offline – keine Internetverbindung</div>
+    <div class="container">
+      <div class="icon">📡</div>
+      <h1>Keine Internetverbindung</h1>
+      <p>
+        Die App konnte nicht geladen werden. Bitte prüfe deine
+        Internetverbindung und versuche es erneut.
+      </p>
+      <button onclick="location.reload()">Erneut versuchen</button>
+    </div>
+  </body>
+</html>

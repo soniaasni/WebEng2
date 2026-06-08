@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- PWA Manifest (relative Pfade — funktioniert lokal und auf GitHub Pages) -->
+    <link rel="manifest" href="manifest.json" />
+
+    <!-- Favicon & Touch-Icons -->
+    <link rel="icon" type="image/png" href="img/Icon.png?v=4" />
+    <link rel="apple-touch-icon" href="img/Icon.png?v=4" />
+
+    <!-- Theme & PWA-Darstellung -->
+    <meta name="theme-color" content="#1e40af" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Map App" />
+
+    <!-- Beschreibung -->
+    <meta name="description" content="Location-Based Service mit OpenStreetMap, Reverse Geocoding, Wikipedia-Integration und Routenberechnung." />
+    <meta name="application-name" content="WebEng2 Map App" />
+
+    <!-- Preconnect: frühe TCP/TLS-Verbindungen zu externen Diensten -->
+    <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
+    <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin />
+    <link rel="dns-prefetch" href="https://de.wikipedia.org" />
+    <link rel="dns-prefetch" href="https://routing.openstreetmap.de" />
+    <link rel="dns-prefetch" href="https://unpkg.com" />
+
+    <title>WebEng2 Map App</title>
+    <script type="module" crossorigin src="/WebEng2/assets/index-BLtqaORp.js"></script>
+    <link rel="modulepreload" crossorigin href="/WebEng2/assets/vendor-f7-BdwSukp8.js">
+    <link rel="modulepreload" crossorigin href="/WebEng2/assets/vendor-leaflet-BQ7JcmOK.js">
+    <link rel="stylesheet" crossorigin href="/WebEng2/assets/index-FHNC7_sX.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
