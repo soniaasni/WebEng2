@@ -1,3 +1,15 @@
+/* ── CSS-Variablen & Framework7-Theming ────────────────────── */
+:root {
+  --f7-theme-color: #2563eb;
+  --f7-theme-color-rgb: 37, 99, 235;
+  --f7-navbar-bg-color: #1e40af;
+  --f7-navbar-text-color: #ffffff;
+  --f7-navbar-link-color: rgba(255, 255, 255, 0.85);
+  --f7-navbar-title-font-size: 17px;
+  --f7-navbar-title-font-weight: 700;
+  --f7-safe-area-top: 0px;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -11,11 +23,11 @@ body,
 
 body {
   font-family: Inter, system-ui, sans-serif;
-  background: #f5f7fb;
-  color: #20232a;
+  background: linear-gradient(160deg, #e8f0fe 0%, #f5f7fb 60%, #fafbff 100%);
+  color: #1e293b;
 }
 
-/* Framework7-Grundcontainer */
+/* ── Framework7-Grundcontainer ─────────────────────────────── */
 .framework7-root,
 .views,
 .view,
@@ -23,73 +35,43 @@ body {
   height: 100%;
 }
 
-/* Ganze App-Seite */
+/* ── Seite: kein vertikales Scrollen ───────────────────────── */
 .app-page {
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
-/* Bereich oberhalb der Karte: Offline-Banner + Suchleiste + Button */
+/* page-content als Flex-Spalte, kein Scroll */
+.app-page .page-content {
+  display: flex !important;
+  flex-direction: column;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* ── Oberer Bereich (Controls) ─────────────────────────────── */
 .top-content {
-  display: flex;
-  gap: 12px;
-  align-items: stretch;
+  flex: 0 0 auto;
+  padding: 8px 12px !important;
+  margin: 0 !important;
 }
 
-/* Karte nimmt den restlichen sichtbaren Platz ein */
-.map-fill {
-  width: 100%;
-  height: calc(100vh - 150px);
-}
-
-/* Äußerer Container in Map.jsx */
-.map-wrapper {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-/* Leaflet selbst */
-.leaflet-container {
-  width: 100%;
-  height: 100%;
-}
-
-/* Optionaler Link auf der Karte */
-.map-issue-link {
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
-  z-index: 1000;
-  background: white;
-  color: #0645ad;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 14px;
-  text-decoration: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-}
-
-/* Offline-Hinweis */
-.offline-banner {
-  background: #fef08a;
-  color: #713f12;
-  text-align: center;
-  padding: 0.6rem 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  margin-bottom: 0.75rem;
-  border: 1px solid #fde047;
-}
-
-.search-location-row {
-  width: 100%;
+/* ── Controls-Card ─────────────────────────────────────────── */
+.controls-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow:
+    0 4px 24px rgba(37, 99, 235, 0.08),
+    0 1px 6px rgba(0, 0, 0, 0.06);
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
+/* ── Ziel-Suche ────────────────────────────────────────────── */
 .search-area {
   display: flex;
   gap: 8px;
@@ -102,89 +84,197 @@ body {
 }
 
 .search-button {
-  width: 140px;
+  flex-shrink: 0;
+  width: 90px;
+  font-weight: 600 !important;
 }
 
+/* ── Eigener Startort ──────────────────────────────────────── */
+.start-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.start-row:focus-within {
+  border-color: #2563eb;
+  background: #ffffff;
+}
+
+.start-input {
+  grid-column: 1;
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b !important;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.start-input::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+}
+
+.start-clear {
+  grid-column: 2;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 15px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.start-clear:hover {
+  color: #475569;
+}
+
+/* ── Aktions-Buttons ───────────────────────────────────────── */
 .action-row {
   display: flex;
   gap: 8px;
-  width: 100%;
 }
 
-.route-button{
+.route-button {
   flex: 1;
-  height: auto;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
 }
 
 .location-button {
-  flex: 1;
-  height: auto;
+  flex-shrink: 0;
+  width: 120px;
 }
 
-.search-error {
-  color: #ef4444;
-  margin-top: 8px;
+/* ── Fehler-Meldungen ──────────────────────────────────────── */
+.field-error {
+  margin: 0;
+  padding: 4px 2px;
+  color: #dc2626;
+  font-size: 0.82rem;
 }
 
 .location-error {
+  margin: 0;
+  padding: 7px 10px;
   color: #b91c1c;
   background: #fee2e2;
-  padding: 8px 12px;
-  border-radius: 6px;
-  margin-top: 8px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  border-left: 3px solid #ef4444;
 }
 
-.leaflet-routing-container {
-  display: none;
+.route-error {
+  margin: 0;
+  padding: 7px 10px;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  border-left: 3px solid #ef4444;
+}
+
+/* ── Routeninfo-Banner ─────────────────────────────────────── */
+.route-info-loading {
+  margin: 0;
+  padding: 8px 10px;
+  color: #2563eb;
+  font-size: 0.85rem;
+  text-align: center;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
 }
 
 .route-info {
-  margin: 8px 0 0;
-  padding: 10px 14px;
+  padding: 9px 12px;
   background: linear-gradient(135deg, #dbeafe, #e0f2fe);
-  color: #1e40af;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  border-left: 4px solid #3b82f6;
-  line-height: 1.6;
+  border-radius: 10px;
+  border-left: 4px solid #2563eb;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.route-info strong {
-  display: block;
-  font-size: 0.8rem;
+.route-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.route-label {
+  font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #3b82f6;
-  margin-bottom: 2px;
+  letter-spacing: 0.07em;
+  color: #2563eb;
+}
+
+.route-stats {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e40af;
 }
 
 .route-places {
-  display: block;
-  font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
+  color: #1e3a8a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.route-stats {
-  display: block;
+/* ── Karte füllt restlichen Platz ──────────────────────────── */
+.map-fill {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+/* ── Äußerer Map-Wrapper ───────────────────────────────────── */
+.map-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* ── Leaflet ───────────────────────────────────────────────── */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Offline-Banner ────────────────────────────────────────── */
+.offline-banner {
+  background: #fef9c3;
+  color: #713f12;
+  text-align: center;
+  padding: 6px 12px;
+  border-radius: 10px;
   font-size: 0.85rem;
-  opacity: 0.85;
-  margin-top: 2px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  border: 1px solid #fde047;
 }
 
-.route-error {
-  margin: 6px 0 0;
-  padding: 8px 12px;
-  background: #fee2e2;
-  color: #b91c1c;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  border-left: 4px solid #ef4444;
-}
-
-/* Leaflet-Routing-Machine Panel komplett ausblenden */
+/* ── Leaflet-Routing-Machine Panel ausblenden ──────────────── */
 .leaflet-routing-container,
 .leaflet-routing-container-hide {
   display: none !important;

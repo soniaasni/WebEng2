@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   App as Framework7App,
   View,
@@ -12,6 +12,23 @@ import {
 import Map from "./components/Map";
 import OfflineBanner from "./components/OfflineBanner";
 
+function formatDuration(minutes) {
+  if (minutes < 60) return `${minutes} Min.`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m > 0 ? `${h}h ${m} Min.` : `${h}h`;
+}
+
+async function geocodePlace(text) {
+  const url =
+    `https://nominatim.openstreetmap.org/search?` +
+    `q=${encodeURIComponent(text)}&format=json&limit=1`;
+  const res = await fetch(url, { headers: { "Accept-Language": "de" } });
+  const data = await res.json();
+  if (!data || data.length === 0) return null;
+  return { lat: Number(data[0].lat), lon: Number(data[0].lon) };
+}
+
 function App() {
   const [searchValue, setSearchValue] = useState("");
   const [submittedSearch, setSubmittedSearch] = useState("");
@@ -24,15 +41,19 @@ function App() {
   const [targetPosition, setTargetPosition] = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
 
+  // Eigener Startort
+  const [startText, setStartText] = useState("");
+  const [routeStartPosition, setRouteStartPosition] = useState(null);
+  const [startError, setStartError] = useState("");
+  const [startLoading, setStartLoading] = useState(false);
+
   const handleSearch = (event) => {
     event?.preventDefault();
-
     const trimmed = searchValue.trim();
     if (!trimmed) {
       setSearchError("Bitte gib einen Ortsnamen ein.");
       return;
     }
-
     setSearchError("");
     setSubmittedSearch(trimmed);
   };
@@ -43,44 +64,64 @@ function App() {
   };
 
   const handleLocateUser = () => {
-  if (!navigator.geolocation) {
-    showLocationError("Geolocation wird von diesem Browser nicht unterstützt.");
-    return;
-  }
-
-  setLocationError("");
-
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const coords = [pos.coords.latitude, pos.coords.longitude];
-
-      setUserPosition(coords);
-      setLocationError("");
-
-      console.log("Standort über Button aktualisiert:", coords);
-    },
-    (err) => {
-      console.error("Standort konnte nicht geladen werden:", err);
-
-      if (err.code === 1) {
-        showLocationError(
-          "Standortzugriff verweigert. Bitte aktiviere die Standortfreigabe."
-        );
-      } else if (err.code === 2) {
-        showLocationError("Standort konnte nicht ermittelt werden.");
-      } else if (err.code === 3) {
-        showLocationError("Zeitüberschreitung beim Abrufen des Standorts.");
-      } else {
-        showLocationError("Standort konnte nicht geladen werden.");
-      }
-    },
-    {
-      enableHighAccuracy: false,
-      timeout: 10000,
-      maximumAge: 60000,
+    if (!navigator.geolocation) {
+      showLocationError("Geolocation wird von diesem Browser nicht unterstützt.");
+      return;
     }
-  );
-};
+    setLocationError("");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = [pos.coords.latitude, pos.coords.longitude];
+        setUserPosition(coords);
+        setLocationError("");
+      },
+      (err) => {
+        if (err.code === 1) showLocationError("Standortzugriff verweigert. Bitte aktiviere die Standortfreigabe.");
+        else if (err.code === 2) showLocationError("Standort konnte nicht ermittelt werden.");
+        else if (err.code === 3) showLocationError("Zeitüberschreitung beim Abrufen des Standorts.");
+        else showLocationError("Standort konnte nicht geladen werden.");
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  const handleRouteClick = async () => {
+    setRouteError("");
+    setRouteInfo(null);
+    setStartError("");
+
+    if (!targetPosition) {
+      setRouteError("Bitte zuerst ein Ziel auswählen.");
+      return;
+    }
+
+    if (startText.trim()) {
+      // Eigener Startort geocodieren
+      setStartLoading(true);
+      try {
+        const result = await geocodePlace(startText.trim());
+        setStartLoading(false);
+        if (!result) {
+          setStartError("Startort nicht gefunden. Bitte genauer eingeben.");
+          return;
+        }
+        setRouteStartPosition([result.lat, result.lon]);
+      } catch {
+        setStartLoading(false);
+        setStartError("Startort konnte nicht geladen werden.");
+        return;
+      }
+    } else {
+      setRouteStartPosition(null);
+      if (!userPosition) {
+        setRouteError("Bitte Standortfreigabe erlauben oder Startort eingeben.");
+        return;
+      }
+    }
+
+    setRouteLoading(true);
+    setShouldRoute(true);
+  };
 
   return (
     <Framework7App name="WebEng2 Map App" theme="auto">
@@ -91,90 +132,87 @@ function App() {
           <Block className="top-content">
             <OfflineBanner />
 
-            <div className="search-location-row">
+            <div className="controls-card">
+              {/* Ziel-Suche */}
               <div className="search-area">
                 <Searchbar
-                  placeholder="Ort suchen"
+                  placeholder="Ziel suchen"
                   value={searchValue}
-                  onInput={(event) => setSearchValue(event.target.value)}
+                  onInput={(e) => setSearchValue(e.target.value)}
                   onSubmit={handleSearch}
                   disableButtonText="Abbrechen"
                 />
-
-                <Button fill  className="search-button" onClick={handleSearch}>
+                <Button fill className="search-button" onClick={handleSearch}>
                   Suchen
                 </Button>
               </div>
 
+              {searchError && (
+                <p className="field-error">{searchError}</p>
+              )}
+
+              {/* Eigener Startort */}
+              <div className="start-row">
+                <input
+                  className="start-input"
+                  type="text"
+                  placeholder="Start auswählen (leer = GPS-Standort)"
+                  value={startText}
+                  onChange={(e) => setStartText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleRouteClick()}
+                />
+                {startText && (
+                  <button className="start-clear" onClick={() => { setStartText(""); setRouteStartPosition(null); setStartError(""); }}>✕</button>
+                )}
+              </div>
+
+              {startError && <p className="field-error">{startError}</p>}
+
+              {/* Aktions-Buttons */}
               <div className="action-row">
                 <Button
                   fill
-                  small
                   className="route-button"
-                  onClick={() => {
-                    setRouteError("");
-                    setRouteInfo(null);
-
-                    if (!userPosition) {
-                      setRouteError("Bitte Standortfreigabe erlauben.");
-                      setRouteLoading(false);
-                      return;
-                    }
-
-                    if (!targetPosition) {
-                      setRouteError("Bitte zuerst ein Ziel auswählen.");
-                      setRouteLoading(false);
-                      return;
-                    }
-
-                    setRouteLoading(true);
-                    setShouldRoute(true);
-                  }}
+                  onClick={handleRouteClick}
+                  disabled={startLoading}
                 >
-                  Route berechnen
+                  {startLoading ? "Lade…" : "Route berechnen"}
                 </Button>
-
                 <Button
-                  fill
+                  outline
                   className="location-button"
                   onClick={handleLocateUser}
                 >
-                  📍 Standort anzeigen
+                  📍 Standort
                 </Button>
               </div>
-              
+
+              {locationError && (
+                <p className="location-error">{locationError}</p>
+              )}
+
               {routeLoading && (
-                <p className="route-info">
-                  Route wird berechnet…
-                </p>
+                <p className="route-info-loading">Route wird berechnet…</p>
               )}
 
               {routeInfo && !routeLoading && (
                 <div className="route-info">
-                  <strong>Route</strong>
-                  <span className="route-places">{routeInfo.from} → {routeInfo.to}</span>
-                  <span className="route-stats">{routeInfo.distanceKm} km &nbsp;·&nbsp; {routeInfo.durationMin} Min.</span>
+                  <div className="route-info-header">
+                    <span className="route-label">Route</span>
+                    <span className="route-stats">
+                      {routeInfo.distanceKm} km &nbsp;·&nbsp; {formatDuration(routeInfo.durationMin)}
+                    </span>
+                  </div>
+                  <span className="route-places">
+                    {routeInfo.from} → {routeInfo.to}
+                  </span>
                 </div>
               )}
 
               {routeError && (
-                <p className="route-error">
-                  {routeError}
-                </p>
+                <p className="route-error">{routeError}</p>
               )}
             </div>
-
-            {locationError && (
-              <p className="location-error">
-                {locationError}
-              </p>
-            )}
-
-            {searchError && (
-              <p style={{ color: "#ef4444", marginTop: "8px" }}>
-                {searchError}
-              </p>
-            )}
           </Block>
 
           <div className="map-fill">
@@ -191,6 +229,8 @@ function App() {
               setRouteError={setRouteError}
               setRouteLoading={setRouteLoading}
               routeInfo={routeInfo}
+              routeStartPosition={routeStartPosition}
+              routeStartLabel={startText.trim() || null}
             />
           </div>
         </Page>
