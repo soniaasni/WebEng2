@@ -472,7 +472,7 @@ export default function Map({
         {targetPosition && (
           <Marker
             position={targetPosition}
-            icon={routeInfo ? targetIcon : undefined}
+            icon={targetIcon}
             ref={markerRef}
             eventHandlers={{
               add: (e) => e.target.openPopup(),
