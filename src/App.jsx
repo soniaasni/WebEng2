@@ -151,8 +151,9 @@ function App() {
 
               {routeInfo && !routeLoading && (
                 <div className="route-info">
-                  <strong>Fahrradroute</strong>
-                  🚴 {routeInfo.distanceKm} km &nbsp;·&nbsp; ⏱ {routeInfo.durationMin} Min.
+                  <strong>Route</strong>
+                  <span className="route-places">{routeInfo.from} → {routeInfo.to}</span>
+                  <span className="route-stats">{routeInfo.distanceKm} km &nbsp;·&nbsp; {routeInfo.durationMin} Min.</span>
                 </div>
               )}
 

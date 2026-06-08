@@ -33,14 +33,7 @@ const startIcon = L.divIcon({
     border-radius: 50%;
     border: 3px solid white;
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 700;
-    font-size: 13px;
-    font-family: sans-serif;
-  ">A</div>`,
+  "></div>`,
   iconSize: [30, 30],
   iconAnchor: [15, 15],
   popupAnchor: [0, -18],
@@ -57,16 +50,7 @@ const targetIcon = L.divIcon({
     transform: rotate(-45deg);
     border: 3px solid white;
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-  "><span style="
-    display: block;
-    transform: rotate(45deg);
-    color: white;
-    font-weight: 700;
-    font-size: 13px;
-    font-family: sans-serif;
-    text-align: center;
-    line-height: 24px;
-  ">B</span></div>`,
+  "></div>`,
   iconSize: [30, 30],
   iconAnchor: [8, 30],
   popupAnchor: [7, -32],
@@ -96,11 +80,11 @@ function MapClickHandler({
       }
 
       try {
-        const name = await fetchPlaceName(e.latlng.lat, e.latlng.lng);
+        const { displayName, searchTerm } = await fetchLocationInfo(e.latlng.lat, e.latlng.lng);
         if (requestId.current !== currentId) return;
-        setPlaceName(name);
+        setPlaceName(displayName);
 
-        const wiki = await fetchWikipediaInfo(name);
+        const wiki = await fetchWikipediaInfo(searchTerm);
         if (requestId.current !== currentId) return;
         setWikiInfo(wiki ?? "not_found");
       } catch (error) {
@@ -159,13 +143,17 @@ function SearchPlaceHandler({
         }
 
         const coords = [result.lat, result.lon];
+        const parts = result.displayName.split(",");
+        const shortName = parts.slice(0, 2).join(",").trim();
+        const wikiTerm = parts[0].trim();
+
         setTargetPosition(coords);
-        setPlaceName(result.displayName);
+        setPlaceName(shortName);
         setWikiInfo("loading");
         onSearchError?.("");
         map.setView(coords, 14);
 
-        const wiki = await fetchWikipediaInfo(result.displayName);
+        const wiki = await fetchWikipediaInfo(wikiTerm);
         if (requestId.current !== currentId) return;
         setWikiInfo(wiki ?? "not_found");
       } catch (error) {
@@ -190,6 +178,7 @@ function RoutingMachine({
   setRouteInfo,
   setRouteError,
   setRouteLoading,
+  targetPlaceName,
 }) {
   const map = useMap();
   const routingControlRef = useRef(null);
@@ -223,8 +212,8 @@ function RoutingMachine({
         L.latLng(targetPosition[0], targetPosition[1]),
       ],
       router: L.Routing.osrmv1({
-        serviceUrl: "https://routing.openstreetmap.de/routed-bike/route/v1",
-        profile: "bike",
+        serviceUrl: "https://routing.openstreetmap.de/routed-car/route/v1",
+        profile: "car",
       }),
       // Eigene Marker übernehmen — LRM-Waypoint-Marker deaktivieren
       createMarker: () => null,
@@ -249,6 +238,8 @@ function RoutingMachine({
       setRouteInfo({
         distanceKm: (route.summary.totalDistance / 1000).toFixed(1),
         durationMin: Math.round(route.summary.totalTime / 60),
+        from: "Dein Standort",
+        to: targetPlaceName || "Ziel",
       });
       setRouteLoading(false);
       setRouteError("");
@@ -319,7 +310,7 @@ async function fetchWikipediaInfo(placeName) {
   };
 }
 
-async function fetchPlaceName(lat, lon) {
+async function fetchLocationInfo(lat, lon) {
   const url =
     `https://nominatim.openstreetmap.org/reverse?` +
     `lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
@@ -329,16 +320,25 @@ async function fetchPlaceName(lat, lon) {
   });
 
   const data = await response.json();
+  const addr = data.address || {};
 
-  return (
-    data.address?.city ||
-    data.address?.town ||
-    data.address?.village ||
-    data.address?.municipality ||
-    data.address?.county ||
-    data.display_name ||
-    "Unbekannter Ort"
-  );
+  const city =
+    addr.city || addr.town || addr.village || addr.municipality || addr.county || "";
+  const road = addr.road;
+  const houseNumber = addr.house_number;
+
+  let displayName;
+  if (road) {
+    const street = houseNumber ? `${road} ${houseNumber}` : road;
+    displayName = city ? `${street}, ${city}` : street;
+  } else {
+    displayName = city || data.display_name || "Unbekannter Ort";
+  }
+
+  return {
+    displayName,
+    searchTerm: city || road || data.display_name?.split(",")[0]?.trim() || "Unbekannter Ort",
+  };
 }
 
 async function fetchCoordinatesForPlace(placeName) {
@@ -404,11 +404,11 @@ export default function Map({
 
     async function loadLocationInfo() {
       try {
-        const name = await fetchPlaceName(userPosition[0], userPosition[1]);
+        const { displayName, searchTerm } = await fetchLocationInfo(userPosition[0], userPosition[1]);
         if (requestId.current !== currentId) return;
-        setPlaceName(name);
+        setPlaceName(displayName);
 
-        const wiki = await fetchWikipediaInfo(name);
+        const wiki = await fetchWikipediaInfo(searchTerm);
         if (requestId.current !== currentId) return;
         setWikiInfo(wiki ?? "not_found");
       } catch {
@@ -420,6 +420,17 @@ export default function Map({
 
     loadLocationInfo();
   }, [userPosition]);
+
+  // Routeninfo-Banner aktualisieren sobald Ortsname aufgelöst wird
+  useEffect(() => {
+    if (
+      !placeName ||
+      placeName === "Ort wird geladen..." ||
+      placeName === "Kein Internet" ||
+      placeName === "Ort konnte nicht geladen werden"
+    ) return;
+    setRouteInfo((prev) => (prev ? { ...prev, to: placeName } : null));
+  }, [placeName]);
 
   // Route auto-aktualisieren wenn neues Ziel gewählt und Route bereits aktiv
   useEffect(() => {
@@ -460,6 +471,7 @@ export default function Map({
           setRouteInfo={setRouteInfo}
           setRouteError={setRouteError}
           setRouteLoading={setRouteLoading}
+          targetPlaceName={placeName}
         />
 
         {/* Grüner A-Marker an der Startposition (nur wenn Route aktiv) */}
