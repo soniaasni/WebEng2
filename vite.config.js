@@ -13,5 +13,15 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        // Bundle in parallele Chunks aufteilen → schnelleres Laden & besseres Caching
+        manualChunks: {
+          'vendor-react':   ['react', 'react-dom'],
+          'vendor-f7':      ['framework7', 'framework7-react'],
+          'vendor-leaflet': ['leaflet', 'react-leaflet', 'leaflet-routing-machine'],
+        },
+      },
+    },
   },
 });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import {
   App as Framework7App,
   View,
@@ -9,7 +9,8 @@ import {
   Button,
 } from "framework7-react";
 
-import Map from "./components/Map";
+// Lazy Load: Leaflet + LRM (~818 KB) laden erst nach dem ersten Render
+const Map = lazy(() => import("./components/Map"));
 import OfflineBanner from "./components/OfflineBanner";
 
 function formatDuration(minutes) {
@@ -124,10 +125,14 @@ function App() {
   };
 
   return (
-    <Framework7App name="WebEng2 Map App" theme="auto">
+    <Framework7App name="WebEng2 Map App" theme="md">
       <View main>
         <Page className="app-page">
-          <Navbar title="WebEng2 Map App" />
+          <Navbar title="WebEng2 Map App">
+            <span slot="left" style={{ display: "flex", alignItems: "center", paddingLeft: "8px" }}>
+              <img src="img/Icon.png" alt="App Icon" style={{ width: "28px", height: "28px", borderRadius: "6px" }} />
+            </span>
+          </Navbar>
 
           <Block className="top-content">
             <OfflineBanner />
@@ -216,22 +221,24 @@ function App() {
           </Block>
 
           <div className="map-fill">
-            <Map
-              searchPlace={submittedSearch}
-              onSearchError={setSearchError}
-              userPosition={userPosition}
-              setUserPosition={setUserPosition}
-              targetPosition={targetPosition}
-              setTargetPosition={setTargetPosition}
-              shouldRoute={shouldRoute}
-              setShouldRoute={setShouldRoute}
-              setRouteInfo={setRouteInfo}
-              setRouteError={setRouteError}
-              setRouteLoading={setRouteLoading}
-              routeInfo={routeInfo}
-              routeStartPosition={routeStartPosition}
-              routeStartLabel={startText.trim() || null}
-            />
+            <Suspense fallback={<div className="map-loading">Karte wird geladen…</div>}>
+              <Map
+                searchPlace={submittedSearch}
+                onSearchError={setSearchError}
+                userPosition={userPosition}
+                setUserPosition={setUserPosition}
+                targetPosition={targetPosition}
+                setTargetPosition={setTargetPosition}
+                shouldRoute={shouldRoute}
+                setShouldRoute={setShouldRoute}
+                setRouteInfo={setRouteInfo}
+                setRouteError={setRouteError}
+                setRouteLoading={setRouteLoading}
+                routeInfo={routeInfo}
+                routeStartPosition={routeStartPosition}
+                routeStartLabel={startText.trim() || null}
+              />
+            </Suspense>
           </div>
         </Page>
       </View>
