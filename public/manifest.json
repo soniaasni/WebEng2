@@ -1,15 +1,27 @@
 {
   "name": "WebEng2 Map App",
-  "short_name": "MapApp",
-  "start_url": "/",
+  "short_name": "Map App",
+  "description": "Location-Based Service mit OpenStreetMap, Reverse Geocoding, Wikipedia-Integration und Routenberechnung.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1976d2",
+  "orientation": "portrait-primary",
+  "background_color": "#1e40af",
+  "theme_color": "#1e40af",
+  "categories": ["navigation", "education", "utilities"],
   "icons": [
     {
-      "src": "/img/Icon.png",
+      "src": "./img/Icon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./img/Icon.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
     }
   ]
 }

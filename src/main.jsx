@@ -14,9 +14,12 @@ Framework7.use(Framework7React);
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch((err) => {
-      console.error("Service Worker Registrierung fehlgeschlagen:", err);
-    });
+    // import.meta.env.BASE_URL = '/' lokal, '/WebEng2/' auf GitHub Pages
+    navigator.serviceWorker
+      .register(import.meta.env.BASE_URL + "sw.js")
+      .catch((err) => {
+        console.error("Service Worker Registrierung fehlgeschlagen:", err);
+      });
   });
 }
 
