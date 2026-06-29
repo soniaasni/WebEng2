@@ -12,7 +12,10 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-routing-machine";
 import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 
-// Fix für fehlende Marker-Icons in Vite/React-Projekten
+// ═══════════════════════════════════════════════════════════ 
+// Leaflet Marker-Icons: Fix für Vite/React
+// ═══════════════════════════════════════════════════════════ 
+// Ohne diesen Fix zeigen sich Marker-Icons nicht korrekt
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -23,7 +26,11 @@ L.Icon.Default.mergeOptions({
     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-// Grüner Start-Marker (A)
+// ═══════════════════════════════════════════════════════════ 
+// Marker-Icons: Grüner Kreis für Start (A), roter Pfeil für Ziel (B)
+// ═══════════════════════════════════════════════════════════ 
+
+// Grüner Start-Marker
 const startIcon = L.divIcon({
   className: "",
   html: `<div style="
@@ -35,11 +42,11 @@ const startIcon = L.divIcon({
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   "></div>`,
   iconSize: [30, 30],
-  iconAnchor: [15, 15],
-  popupAnchor: [0, -18],
+  iconAnchor: [15, 15],        // Mittelpunkt des Icons
+  popupAnchor: [0, -18],       // Popup-Position relativ zum Icon
 });
 
-// Roter Ziel-Marker (B)
+// Roter Ziel-Marker (Pfeil-Form)
 const targetIcon = L.divIcon({
   className: "",
   html: `<div style="
@@ -52,27 +59,32 @@ const targetIcon = L.divIcon({
     box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   "></div>`,
   iconSize: [30, 30],
-  iconAnchor: [8, 30],
-  popupAnchor: [7, -32],
+  iconAnchor: [8, 30],         // Spitze des Pfeils
+  popupAnchor: [7, -32],       // Popup über der Spitze
 });
 
+// ═══════════════════════════════════════════════════════════ 
+// MapClickHandler: Behandelt Klicks auf die Karte
+// ═══════════════════════════════════════════════════════════ 
 function MapClickHandler({
-  setTargetPosition,
-  setPlaceName,
-  setWikiInfo,
-  onSearchError,
-  requestId,
+  setTargetPosition,        // Speichert Ziel-Koordinaten
+  setPlaceName,             // Speichert Ortsname
+  setWikiInfo,              // Speichert Wikipedia-Info
+  onSearchError,            // Zeigt Fehler an
+  requestId,                // Verhindert Race-Conditions
 }) {
   useMapEvents({
     async click(e) {
       const coords = [e.latlng.lat, e.latlng.lng];
       const currentId = ++requestId.current;
 
+      // Sofort Marker setzen
       setTargetPosition(coords);
       setPlaceName("Ort wird geladen...");
       setWikiInfo("loading");
       onSearchError?.("");
 
+      // Wenn offline: zeige es an
       if (!navigator.onLine) {
         setPlaceName("Kein Internet");
         setWikiInfo("offline");
@@ -80,10 +92,12 @@ function MapClickHandler({
       }
 
       try {
+        // Finde Ortsnamen für die Koordinaten (Reverse Geocoding)
         const { displayName, searchTerm } = await fetchLocationInfo(e.latlng.lat, e.latlng.lng);
-        if (requestId.current !== currentId) return;
+        if (requestId.current !== currentId) return; // Request ist veraltet
         setPlaceName(displayName);
 
+        // Lade Wikipedia-Info
         const wiki = await fetchWikipediaInfo(searchTerm);
         if (requestId.current !== currentId) return;
         setWikiInfo(wiki ?? "not_found");
@@ -99,20 +113,26 @@ function MapClickHandler({
   return null;
 }
 
+// ═══════════════════════════════════════════════════════════ 
+// FlyToPosition: Karte fliegt zu einem Standort
+// ═══════════════════════════════════════════════════════════ 
 function FlyToPosition({ position }) {
   const map = useMap();
 
   useEffect(() => {
     if (position) {
-      map.setView(position, 16);
+      map.setView(position, 16); // Zoom-Stufe 16
     }
   }, [position]);
 
   return null;
 }
 
+// ═══════════════════════════════════════════════════════════ 
+// SearchPlaceHandler: Sucht einen Ort und zeigt ihn auf der Karte
+// ═══════════════════════════════════════════════════════════ 
 function SearchPlaceHandler({
-  searchPlace,
+  searchPlace,              // Suchtext vom Benutzer
   setTargetPosition,
   setPlaceName,
   setWikiInfo,
@@ -127,6 +147,7 @@ function SearchPlaceHandler({
     async function search() {
       const currentId = ++requestId.current;
 
+      // Offline-Check
       if (!navigator.onLine) {
         onSearchError?.("Suche ist offline nicht verfügbar.");
         setWikiInfo("offline");
@@ -134,6 +155,7 @@ function SearchPlaceHandler({
       }
 
       try {
+        // Finde Koordinaten für den Ortsnamen
         const result = await fetchCoordinatesForPlace(searchPlace);
         if (requestId.current !== currentId) return;
 
@@ -147,12 +169,14 @@ function SearchPlaceHandler({
         const shortName = parts.slice(0, 2).join(",").trim();
         const wikiTerm = parts[0].trim();
 
+        // Marker setzen
         setTargetPosition(coords);
         setPlaceName(shortName);
         setWikiInfo("loading");
         onSearchError?.("");
-        map.setView(coords, 14);
+        map.setView(coords, 14); // Zoom-Stufe 14
 
+        // Wikipedia-Info laden
         const wiki = await fetchWikipediaInfo(wikiTerm);
         if (requestId.current !== currentId) return;
         setWikiInfo(wiki ?? "not_found");
@@ -170,24 +194,28 @@ function SearchPlaceHandler({
   return null;
 }
 
+// ═══════════════════════════════════════════════════════════ 
+// RoutingMachine: Berechnet und zeigt Route mit OSRM
+// ═══════════════════════════════════════════════════════════ 
 function RoutingMachine({
-  startPosition,
-  startPositionOverride,
-  startLabel,
-  targetPosition,
-  shouldRoute,
-  setShouldRoute,
-  setRouteInfo,
-  setRouteError,
-  setRouteLoading,
-  targetPlaceName,
+  startPosition,            // GPS-Standort
+  startPositionOverride,    // Benutzerdefinierten Startort
+  startLabel,               // Label für Startort
+  targetPosition,           // Ziel
+  shouldRoute,              // True = Route berechnen
+  setShouldRoute,           // Schaltet Route aus
+  setRouteInfo,             // Speichert Routendaten
+  setRouteError,            // Zeigt Fehler
+  setRouteLoading,          // Zeigt "lädt"-Status
+  targetPlaceName,          // Name des Ziels
 }) {
   const map = useMap();
-  const routingControlRef = useRef(null);
+  const routingControlRef = useRef(null); // Speichert Route-Kontrolle
 
   useEffect(() => {
     if (!shouldRoute) return;
 
+    // Wähle Start: benutzerdef. oder GPS
     const effectiveStart = startPositionOverride || startPosition;
 
     if (!effectiveStart) {
@@ -210,6 +238,7 @@ function RoutingMachine({
       routingControlRef.current = null;
     }
 
+    // Neue Route berechnen mit OSRM
     const routingControl = L.Routing.control({
       waypoints: [
         L.latLng(effectiveStart[0], effectiveStart[1]),
@@ -217,15 +246,13 @@ function RoutingMachine({
       ],
       router: L.Routing.osrmv1({
         serviceUrl: "https://routing.openstreetmap.de/routed-car/route/v1",
-        profile: "car",
+        profile: "car", // Auto-Route
       }),
-      // Eigene Marker übernehmen — LRM-Waypoint-Marker deaktivieren
-      createMarker: () => null,
-      // Blaue Route mit Outline für gute Sichtbarkeit
+      createMarker: () => null, // Keine eigenen Marker von LRM
       lineOptions: {
         styles: [
-          { color: "#1e40af", weight: 9, opacity: 0.25 },
-          { color: "#3b82f6", weight: 5, opacity: 0.9 },
+          { color: "#1e40af", weight: 9, opacity: 0.25 }, // Schatten
+          { color: "#3b82f6", weight: 5, opacity: 0.9 },  // Vordergrund
         ],
         extendToWaypoints: false,
         missingRouteTolerance: 0,
@@ -234,9 +261,10 @@ function RoutingMachine({
       addWaypoints: false,
       draggableWaypoints: false,
       fitSelectedRoutes: true,
-      show: false,
+      show: false, // Verstecke LRM-Panel
     });
 
+    // Wenn Route berechnet: Daten speichern
     routingControl.on("routesfound", (event) => {
       const route = event.routes[0];
       setRouteInfo({
@@ -250,6 +278,7 @@ function RoutingMachine({
       setShouldRoute(false);
     });
 
+    // Wenn Fehler: zeige ihn an
     routingControl.on("routingerror", () => {
       setRouteLoading(false);
       setRouteInfo(null);
@@ -259,12 +288,9 @@ function RoutingMachine({
 
     routingControl.addTo(map);
     routingControlRef.current = routingControl;
-
-    // Kein Cleanup hier — die Route soll nach dem Berechnen sichtbar bleiben.
-    // Cleanup nur beim Unmount (useEffect unten).
   }, [shouldRoute]);
 
-  // Route nur beim Unmount entfernen
+  // Aufräumen beim Unmount
   useEffect(() => {
     return () => {
       if (routingControlRef.current) {
@@ -277,6 +303,11 @@ function RoutingMachine({
   return null;
 }
 
+// ═══════════════════════════════════════════════════════════ 
+// API-Funktionen: Wikipedia, Nominatim, OSRM
+// ═══════════════════════════════════════════════════════════ 
+
+// Hole Wikipedia-Artikel für einen Ortsnamen
 async function fetchWikipediaInfo(placeName) {
   const searchTerm = placeName.split(",")[0].trim();
 
@@ -292,11 +323,12 @@ async function fetchWikipediaInfo(placeName) {
   if (!pages) return null;
 
   const page = Object.values(pages)[0];
-  if (page.missing !== undefined || page.pageid === undefined) return null;
+  if (page.missing !== undefined || page.pageid === undefined) return null; // Artikel nicht gefunden
 
   const extract = page.extract?.trim();
   if (!extract) return null;
 
+  // Filtere reine Begriffsklärungen
   if (
     extract.startsWith(searchTerm + " steht für") ||
     extract.includes("Begriffsklärung")
@@ -304,6 +336,7 @@ async function fetchWikipediaInfo(placeName) {
     return null;
   }
 
+  // Kürze auf 250 Zeichen
   const shortExtract =
     extract.length > 250 ? extract.slice(0, 250).trimEnd() + " …" : extract;
 
@@ -314,6 +347,7 @@ async function fetchWikipediaInfo(placeName) {
   };
 }
 
+// Finde Ortsnamen für Koordinaten (Reverse Geocoding)
 async function fetchLocationInfo(lat, lon) {
   const url =
     `https://nominatim.openstreetmap.org/reverse?` +
@@ -326,6 +360,7 @@ async function fetchLocationInfo(lat, lon) {
   const data = await response.json();
   const addr = data.address || {};
 
+  // Versuche beste Adresskomponenten zu finden
   const city =
     addr.city || addr.town || addr.village || addr.municipality || addr.county || "";
   const road = addr.road;
@@ -345,6 +380,7 @@ async function fetchLocationInfo(lat, lon) {
   };
 }
 
+// Finde Koordinaten für einen Ortsnamen (Geocoding)
 async function fetchCoordinatesForPlace(placeName) {
   const url =
     `https://nominatim.openstreetmap.org/search?` +
@@ -366,34 +402,37 @@ async function fetchCoordinatesForPlace(placeName) {
   };
 }
 
+// ═══════════════════════════════════════════════════════════ 
+// Hauptkomponente: Map
+// ═══════════════════════════════════════════════════════════ 
 export default function Map({
-  searchPlace,
-  onSearchError,
-  userPosition,
-  targetPosition,
+  searchPlace,              // Suchtext zum Anzeigen
+  onSearchError,            // Fehler-Callback
+  userPosition,             // GPS-Standort
+  targetPosition,           // Ausgewähltes Ziel
   setTargetPosition,
-  shouldRoute,
+  shouldRoute,              // Trigger für Routenberechnung
   setShouldRoute,
   setRouteInfo,
   setRouteError,
   setRouteLoading,
-  routeInfo,
-  routeStartPosition,
-  routeStartLabel,
+  routeInfo,                // Routendaten
+  routeStartPosition,       // Benutzerdef. Startort
+  routeStartLabel,          // Label für Startort
 }) {
-  const [placeName, setPlaceName] = useState("");
-  const [wikiInfo, setWikiInfo] = useState(null);
-  const requestId = useRef(0);
-  const markerRef = useRef(null);
+  const [placeName, setPlaceName] = useState(""); // Name des angeklickten Ortes
+  const [wikiInfo, setWikiInfo] = useState(null); // Wikipedia-Info Status
+  const requestId = useRef(0);                     // Verhindert Race-Conditions
+  const markerRef = useRef(null);                  // Referenz zum Ziel-Marker
 
-  // Popup nach Wikipedia-Laden öffnen
+  // Öffne Popup wenn Wikipedia-Info geladen ist
   useEffect(() => {
     if (wikiInfo && wikiInfo !== "loading") {
       markerRef.current?.openPopup();
     }
   }, [wikiInfo]);
 
-  // Pin + Wikipedia beim Standort-Button
+  // Wenn Nutzer "Standort"-Button klickt: Zeige Marker + Wikipedia
   useEffect(() => {
     if (!userPosition) return;
 
@@ -427,18 +466,19 @@ export default function Map({
     loadLocationInfo();
   }, [userPosition]);
 
-  // Routeninfo-Banner aktualisieren sobald Ortsname aufgelöst wird
+  // Aktualisiere Routenbanner wenn Ortsname sich ändert
   useEffect(() => {
     if (
       !placeName ||
       placeName === "Ort wird geladen..." ||
       placeName === "Kein Internet" ||
       placeName === "Ort konnte nicht geladen werden"
-    ) return;
+    )
+      return;
     setRouteInfo((prev) => (prev ? { ...prev, to: placeName } : null));
   }, [placeName]);
 
-  // Route auto-aktualisieren wenn neues Ziel gewählt und Route bereits aktiv
+  // Auto-Neuberechnung wenn neues Ziel und Route bereits aktiv
   useEffect(() => {
     if (!targetPosition || !routeInfo) return;
     setRouteLoading(true);
@@ -448,18 +488,21 @@ export default function Map({
   return (
     <div className="map-wrapper">
       <MapContainer
-        center={userPosition || [51.1657, 10.4515]}
+        center={userPosition || [51.1657, 10.4515]} // Fallback: Mitte Deutschland
         zoom={13}
         closePopupOnClick={false}
         style={{ height: "100%", width: "100%" }}
       >
+        {/* OSM Karte */}
         <TileLayer
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
         />
 
+        {/* Fliege zu Benutzer-Standort */}
         <FlyToPosition position={userPosition} />
 
+        {/* Suche und zeige Ort */}
         <SearchPlaceHandler
           searchPlace={searchPlace}
           setTargetPosition={setTargetPosition}
@@ -469,6 +512,7 @@ export default function Map({
           requestId={requestId}
         />
 
+        {/* Route berechnen */}
         <RoutingMachine
           startPosition={userPosition}
           startPositionOverride={routeStartPosition}
@@ -482,7 +526,7 @@ export default function Map({
           targetPlaceName={placeName}
         />
 
-        {/* Grüner Marker an der Startposition (nur wenn Route aktiv) */}
+        {/* Grüner Start-Marker (nur wenn Route berechnet) */}
         {routeInfo && (routeStartPosition || userPosition) && (
           <Marker position={routeStartPosition || userPosition} icon={startIcon}>
             <Popup>
@@ -494,7 +538,7 @@ export default function Map({
           </Marker>
         )}
 
-        {/* Roter B-Marker am Zielort */}
+        {/* Roter Ziel-Marker mit Wikipedia-Info */}
         {targetPosition && (
           <Marker
             position={targetPosition}
@@ -540,6 +584,7 @@ export default function Map({
           </Marker>
         )}
 
+        {/* Klick-Handler */}
         <MapClickHandler
           setTargetPosition={setTargetPosition}
           setPlaceName={setPlaceName}
